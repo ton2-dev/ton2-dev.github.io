@@ -64,6 +64,10 @@ button{font:inherit;cursor:pointer}
 .panel{background:var(--surface);border:1px solid var(--line)}
 .panel>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
 .panel>summary::-webkit-details-marker{display:none}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 12px}
+.dgrid input{font-variant-numeric:tabular-nums}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--strong)}
 .panel>summary h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin:0}
 .panel>summary .hint{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
 .panel>summary::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--fg);border-bottom:1.5px solid var(--fg);transform:rotate(45deg);margin:-3px 2px 0 4px;flex:none}
@@ -77,7 +81,7 @@ button{font:inherit;cursor:pointer}
 label.f{display:flex;flex-direction:column;gap:4px;min-width:0}
 label.f>span{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 label.f>span em{font-style:normal;text-transform:none;letter-spacing:0;opacity:.8}
-input[type=text],input[type=url],input[type=email],input[type=tel],input[type=password],select,textarea{
+input[type=text],input[type=url],input[type=email],input[type=tel],input[type=password],input[type=number],select,textarea{
   width:100%;font:inherit;font-size:14px;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:2px;padding:7px 9px}
 textarea{resize:vertical;min-height:72px;line-height:1.5}
 textarea.bul{min-height:120px}
@@ -129,19 +133,25 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
 
 /* paper preview — always black on white, like the printed page */
 .paper-wrap{container-type:inline-size;background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 0 var(--line)}
-.sheet{--pt:calc(100cqw / 612);color:var(--ink);background:var(--paper);font-family:var(--resume);
-  font-size:calc(10 * var(--pt));line-height:1.28;padding:calc(50 * var(--pt));min-height:calc(792 * var(--pt))}
-.sheet .nm{font-size:calc(20 * var(--pt));font-weight:700;text-align:center;line-height:1.15}
-.sheet .hl{text-align:center;font-size:calc(11 * var(--pt));margin-top:calc(3 * var(--pt))}
-.sheet .ct{text-align:center;font-size:calc(9.5 * var(--pt));margin-top:calc(4 * var(--pt));overflow-wrap:anywhere}
+.sheet{--pt:calc(100cqw / 612);--mt:.7;--mb:.7;--ml:.7;--mr:.7;--fs-name:20;--fs-headline:11;--fs-contact:9.5;--fs-heading:11;--fs-entryTitle:10.5;--fs-meta:10;--fs-dates:10;--fs-summary:10;--fs-skills:10;--fs-bullets:10;--fs-custom:10;
+  color:var(--ink);background:var(--paper);font-family:var(--resume);
+  font-size:calc(10 * var(--pt));line-height:1.25;padding:calc(var(--mt) * 72 * var(--pt)) calc(var(--mr) * 72 * var(--pt)) calc(var(--mb) * 72 * var(--pt)) calc(var(--ml) * 72 * var(--pt));min-height:calc(792 * var(--pt))}
+.sheet .nm{font-size:calc(var(--fs-name) * var(--pt));font-weight:700;text-align:center;line-height:1.15}
+.sheet .hl{text-align:center;font-size:calc(var(--fs-headline) * var(--pt));margin-top:calc(3 * var(--pt))}
+.sheet .ct{text-align:center;font-size:calc(var(--fs-contact) * var(--pt));margin-top:calc(4 * var(--pt));overflow-wrap:anywhere}
 .sheet .sec{margin-top:calc(12 * var(--pt))}
-.sheet .sh{font-size:calc(11 * var(--pt));font-weight:700;text-transform:uppercase;letter-spacing:.02em;border-bottom:calc(.9 * var(--pt)) solid var(--ink);padding-bottom:calc(2 * var(--pt));margin-bottom:calc(6 * var(--pt))}
+.sheet .sh{font-size:calc(var(--fs-heading) * var(--pt));font-weight:700;text-transform:uppercase;letter-spacing:.02em;border-bottom:calc(.9 * var(--pt)) solid var(--ink);padding-bottom:calc(2 * var(--pt));margin-bottom:calc(6 * var(--pt))}
 .sheet .ent{margin-bottom:calc(7 * var(--pt))}
 .sheet .lr{display:flex;justify-content:space-between;gap:calc(10 * var(--pt))}
-.sheet .lr b{font-weight:700}
-.sheet .lr span:last-child{white-space:nowrap}
-.sheet .meta{font-style:italic}
-.sheet ul{margin:calc(2 * var(--pt)) 0 0;padding-left:calc(14 * var(--pt))}
+.sheet .lr b{font-weight:700;font-size:calc(var(--fs-entryTitle) * var(--pt))}
+.sheet .lr span:last-child{white-space:nowrap;font-size:calc(var(--fs-dates) * var(--pt))}
+.sheet .meta{font-style:italic;font-size:calc(var(--fs-meta) * var(--pt))}
+.sheet .gpa{font-size:calc(var(--fs-meta) * var(--pt))}
+.sheet .sum{font-size:calc(var(--fs-summary) * var(--pt))}
+.sheet .skl{font-size:calc(var(--fs-skills) * var(--pt))}
+.sheet ul.exp{font-size:calc(var(--fs-bullets) * var(--pt))}
+.sheet ul.cus{font-size:calc(var(--fs-custom) * var(--pt))}
+.sheet ul{margin:calc(2 * var(--pt)) 0 0;padding-left:1.4em}
 .sheet li{margin-bottom:calc(1.5 * var(--pt))}
 .sheet p{margin:0}
 .sheet .empty{color:#8a8a8a;text-align:center;padding-top:calc(200 * var(--pt))}
@@ -238,6 +248,7 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
       <div class="pbody">
         <label class="f"><span>Professional title <em>(mirror the job title)</em></span><input type="text" id="f-headline" data-path="headline"></label>
         <label class="f"><span>Professional summary</span><textarea id="f-summary" data-path="summary" rows="4"></textarea></label>
+        <label class="check"><input type="checkbox" id="f-hideSummary" data-path="hideSummary"> Remove the Summary section from the resume</label>
       </div>
     </details>
 
@@ -268,6 +279,18 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
           <button class="btn small" type="button" data-act="add-custom" data-title="Projects">+ Projects</button>
           <button class="btn small ghost" type="button" data-act="add-custom" data-title="">+ Other section</button>
         </div></div>
+    </details>
+
+    <details class="panel" id="designPanel">
+      <summary><h2>Design</h2><span class="hint">Margins and font sizes</span></summary>
+      <div class="pbody">
+        <p class="sub-h">Page margins (inches)</p>
+        <div class="dgrid" id="marginGrid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr))"></div>
+        <p class="sub-h">Font sizes (points)</p>
+        <div class="dgrid" id="fontGrid"></div>
+        <p class="note">Keep body text between 10 and 12 pt and margins between 0.5 and 1 inch for the most readable, ATS-friendly result.</p>
+        <div class="row"><button class="btn small" type="button" data-act="design-reset">Reset to defaults</button></div>
+      </div>
     </details>
 
     <div class="row"><button class="link" type="button" data-act="load-example">Load example resume</button><button class="link" type="button" data-act="clear-all">Clear everything</button></div>
@@ -346,8 +369,18 @@ function example(){return{example:true,
   education:[{id:uid(),degree:"B.S.",major:"Statistics",school:"University of Illinois Chicago",location:"Chicago, IL",gpa:"3.6",grad:"May 2020"}],
   custom:[{id:uid(),title:"Certifications",entries:[{id:uid(),name:"Tableau Certified Data Analyst",meta:"Tableau",date:"2023",bullets:""}]}]};}
 
+const DESIGN_DEFAULT={marginTop:0.7,marginBottom:0.7,marginLeft:0.7,marginRight:0.7,
+  name:20,headline:11,contact:9.5,heading:11,entryTitle:10.5,meta:10,dates:10,summary:10,skills:10,bullets:10,custom:10};
+const MARGIN_FIELDS=[["marginTop","Top"],["marginBottom","Bottom"],["marginLeft","Left"],["marginRight","Right"]];
+const FONT_FIELDS=[["name","Name"],["headline","Professional title"],["contact","Contact line"],["heading","Section headings"],
+  ["summary","Summary text"],["skills","Skills text"],["entryTitle","Job titles & degrees"],["meta","Company & school lines"],
+  ["dates","Dates"],["bullets","Job description bullets"],["custom","Custom section details"]];
+function design(){const d=Object.assign({},DESIGN_DEFAULT,state.design||{}),o={};
+  for(const k in DESIGN_DEFAULT){let v=parseFloat(d[k]);if(!isFinite(v))v=DESIGN_DEFAULT[k];
+    o[k]=k.startsWith("margin")?Math.min(2,Math.max(0.25,v)):Math.min(36,Math.max(6,v));}return o;}
 let state;
 try{const raw=localStorage.getItem(KEY);state=raw?Object.assign(blank(),JSON.parse(raw)):example();}catch(e){state=example();}
+state.design=Object.assign({},DESIGN_DEFAULT,state.design||{});
 let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}},300);}
 
 /* ---------- helpers ---------- */
@@ -362,7 +395,7 @@ function model(st){
   return{
     name:(c.name||"").trim(),headline:(st.headline||"").trim(),
     contact:[c.address,c.phone,c.email,c.linkedin].map(s=>(s||"").trim()).filter(Boolean),
-    summary:(st.summary||"").trim(),skills:list(st.skills),
+    summary:st.hideSummary?"":(st.summary||"").trim(),skills:list(st.skills),
     experience:st.experience.filter(e=>e.title||e.company||e.bullets).map(e=>({id:e.id,title:e.title.trim(),company:e.company.trim(),location:e.location.trim(),dates:dateRange(e.start,e.end),bullets:lines(e.bullets)})),
     education:st.education.filter(e=>e.degree||e.school||e.major).map(e=>({degree:[e.degree.trim(),e.major.trim()].filter(Boolean).join(e.degree&&e.major?", ":""),school:e.school.trim(),location:e.location.trim(),grad:e.grad.trim(),gpa:e.gpa.trim()})),
     custom:st.custom.map(s=>({title:(s.title||"").trim()||"Additional",entries:s.entries.filter(x=>x.name||x.bullets).map(x=>({name:x.name.trim(),meta:x.meta.trim(),date:x.date.trim(),bullets:lines(x.bullets)}))})).filter(s=>s.entries.length)
@@ -381,20 +414,23 @@ function plainText(m){
 }
 
 /* ---------- preview ---------- */
+function applyDesignVars(el){const d=design();
+  el.style.setProperty("--mt",d.marginTop);el.style.setProperty("--mb",d.marginBottom);el.style.setProperty("--ml",d.marginLeft);el.style.setProperty("--mr",d.marginRight);
+  FONT_FIELDS.forEach(([k])=>el.style.setProperty("--fs-"+k,d[k]));}
 function renderSheet(){
-  const m=model(state),el=$("#sheet");
+  const m=model(state),el=$("#sheet");applyDesignVars(el);
   if(!m.name&&!m.experience.length&&!m.summary){el.innerHTML='<p class="empty">Your resume preview appears here as you type.</p>';return;}
   const h=[];
   h.push(`<div class="nm">${esc(m.name||"Your Name")}</div>`);
   if(m.headline)h.push(`<div class="hl">${esc(m.headline)}</div>`);
   if(m.contact.length)h.push(`<div class="ct">${m.contact.map(esc).join(" &nbsp;|&nbsp; ")}</div>`);
   const sec=(t,b)=>h.push(`<div class="sec"><div class="sh">${esc(t)}</div>${b}</div>`);
-  const ul=a=>a.length?`<ul>${a.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>`:"";
-  if(m.summary)sec("Summary",`<p>${esc(m.summary)}</p>`);
-  if(m.skills.length)sec("Skills",`<p>${m.skills.map(esc).join(", ")}</p>`);
-  if(m.experience.length)sec("Experience",m.experience.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.title)}</b></span><span>${esc(e.dates)}</span></div><div class="meta">${esc([e.company,e.location].filter(Boolean).join(", "))}</div>${ul(e.bullets)}</div>`).join(""));
-  if(m.education.length)sec("Education",m.education.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.degree)}</b></span><span>${esc(e.grad)}</span></div><div class="meta">${esc([e.school,e.location].filter(Boolean).join(", "))}</div>${e.gpa?`<p>GPA: ${esc(e.gpa)}</p>`:""}</div>`).join(""));
-  m.custom.forEach(s=>sec(s.title,s.entries.map(x=>`<div class="ent"><div class="lr"><span><b>${esc(x.name)}</b>${x.meta?" - "+esc(x.meta):""}</span><span>${esc(x.date)}</span></div>${ul(x.bullets)}</div>`).join("")));
+  const ul=(a,c)=>a.length?`<ul class="${c}">${a.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>`:"";
+  if(m.summary)sec("Summary",`<p class="sum">${esc(m.summary)}</p>`);
+  if(m.skills.length)sec("Skills",`<p class="skl">${m.skills.map(esc).join(", ")}</p>`);
+  if(m.experience.length)sec("Experience",m.experience.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.title)}</b></span><span>${esc(e.dates)}</span></div><div class="meta">${esc([e.company,e.location].filter(Boolean).join(", "))}</div>${ul(e.bullets,"exp")}</div>`).join(""));
+  if(m.education.length)sec("Education",m.education.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.degree)}</b></span><span>${esc(e.grad)}</span></div><div class="meta">${esc([e.school,e.location].filter(Boolean).join(", "))}</div>${e.gpa?`<p class="gpa">GPA: ${esc(e.gpa)}</p>`:""}</div>`).join(""));
+  m.custom.forEach(s=>sec(s.title,s.entries.map(x=>`<div class="ent"><div class="lr"><span><b>${esc(x.name)}</b>${x.meta?" - "+esc(x.meta):""}</span><span>${esc(x.date)}</span></div>${ul(x.bullets,"cus")}</div>`).join("")));
   el.innerHTML=h.join("");
 }
 
@@ -402,35 +438,36 @@ function renderSheet(){
 function buildPDF(m){
   const J=window.jspdf&&window.jspdf.jsPDF;if(!J)throw new Error("PDF library did not load. Check your connection and reload.");
   const doc=new J({unit:"pt",format:"letter",compress:true});
-  const W=612,H=792,M=50,CW=W-2*M;let y=M;
+  const d=design();
+  const W=612,H=792,ML=d.marginLeft*72,MR=d.marginRight*72,MT=d.marginTop*72,MB=d.marginBottom*72,CW=W-ML-MR;let y=MT;
   const set=(st,sz)=>{doc.setFont("helvetica",st);doc.setFontSize(sz);};
   const LH=sz=>sz*1.25;
-  const need=h=>{if(y+h>H-M){doc.addPage();y=M;}};
+  const need=h=>{if(y+h>H-MB){doc.addPage();y=MT;}};
   doc.setTextColor(0,0,0);doc.setDrawColor(0,0,0);
-  function para(t,{st="normal",sz=10,x=M,w=CW,align="left"}={}){
-    set(st,sz);const ls=doc.splitTextToSize(cleanText(t),w);
-    ls.forEach(l=>{need(LH(sz));doc.text(l,align==="center"?W/2:x,y,{baseline:"top",align});y+=LH(sz);});
+  function para(t,{st="normal",sz=10,align="left"}={}){
+    set(st,sz);const ls=doc.splitTextToSize(cleanText(t),CW);
+    ls.forEach(l=>{need(LH(sz));doc.text(l,align==="center"?ML+CW/2:ML,y,{baseline:"top",align});y+=LH(sz);});
   }
-  function lr(left,right,{st="bold",sz=10.5}={}){
-    set("normal",10);const rw=right?doc.getTextWidth(cleanText(right)):0;
-    set(st,sz);const ls=doc.splitTextToSize(cleanText(left),CW-rw-12);
-    need(LH(sz)*ls.length);
-    ls.forEach((l,i)=>{set(st,sz);doc.text(l,M,y,{baseline:"top"});if(i===0&&right){set("normal",10);doc.text(cleanText(right),W-M,y+(sz-10)*.5,{baseline:"top",align:"right"});}y+=LH(sz);});
+  function lr(left,right,{sz=10.5,rsz=10}={}){
+    set("normal",rsz);const rw=right?doc.getTextWidth(cleanText(right)):0;
+    set("bold",sz);const ls=doc.splitTextToSize(cleanText(left),Math.max(80,CW-rw-12));
+    need(LH(Math.max(sz,rsz))*ls.length);
+    ls.forEach((l,i)=>{set("bold",sz);doc.text(l,ML,y,{baseline:"top"});if(i===0&&right){set("normal",rsz);doc.text(cleanText(right),W-MR,y+(sz-rsz)*.5,{baseline:"top",align:"right"});}y+=LH(Math.max(sz,i===0&&right?rsz:0));});
   }
-  function bullets(arr){arr.forEach(b=>{set("normal",10);const ls=doc.splitTextToSize(cleanText(b),CW-14);need(LH(10));
-    doc.text("•",M+3,y,{baseline:"top"});ls.forEach((l,i)=>{if(i)need(LH(10));doc.text(l,M+14,y,{baseline:"top"});y+=LH(10);});y+=1.5;});}
-  function head(t){need(48);y+=9;set("bold",11);doc.text(cleanText(t).toUpperCase(),M,y,{baseline:"top"});y+=LH(11)+1;doc.setLineWidth(.9);doc.line(M,y,W-M,y);y+=6;}
+  function bullets(arr,sz){const ind=sz*1.4;arr.forEach(b=>{set("normal",sz);const ls=doc.splitTextToSize(cleanText(b),CW-ind);need(LH(sz));
+    doc.text("\u2022",ML+sz*.3,y,{baseline:"top"});ls.forEach((l,i)=>{if(i)need(LH(sz));doc.text(l,ML+ind,y,{baseline:"top"});y+=LH(sz);});y+=sz*.15;});}
+  function head(t){need(d.heading*4.4);y+=d.heading*.8;set("bold",d.heading);doc.text(cleanText(t).toUpperCase(),ML,y,{baseline:"top"});y+=LH(d.heading)+1;doc.setLineWidth(.9);doc.line(ML,y,W-MR,y);y+=6;}
 
-  para(m.name||"Your Name",{st:"bold",sz:20,align:"center"});
-  if(m.headline){y+=1;para(m.headline,{sz:11,align:"center"});}
-  if(m.contact.length){y+=2;para(m.contact.join("  |  "),{sz:9.5,align:"center"});}
-  if(m.summary){head("Summary");para(m.summary);}
-  if(m.skills.length){head("Skills");para(m.skills.join(", "));}
-  if(m.experience.length){head("Experience");m.experience.forEach((e,i)=>{if(i)y+=6;need(40);lr(e.title||e.company,e.dates);
-    const meta=[e.title?e.company:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic"});y+=1;bullets(e.bullets);});}
-  if(m.education.length){head("Education");m.education.forEach((e,i)=>{if(i)y+=5;need(30);lr(e.degree||e.school,e.grad);
-    const meta=[e.degree?e.school:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic"});if(e.gpa)para("GPA: "+e.gpa);});}
-  m.custom.forEach(s=>{head(s.title);s.entries.forEach((x,i)=>{if(i)y+=4;lr([x.name,x.meta].filter(Boolean).join(" - "),x.date,{st:"bold",sz:10});bullets(x.bullets);});});
+  para(m.name||"Your Name",{st:"bold",sz:d.name,align:"center"});
+  if(m.headline){y+=1;para(m.headline,{sz:d.headline,align:"center"});}
+  if(m.contact.length){y+=2;para(m.contact.join("  |  "),{sz:d.contact,align:"center"});}
+  if(m.summary){head("Summary");para(m.summary,{sz:d.summary});}
+  if(m.skills.length){head("Skills");para(m.skills.join(", "),{sz:d.skills});}
+  if(m.experience.length){head("Experience");m.experience.forEach((e,i)=>{if(i)y+=6;need(40);lr(e.title||e.company,e.dates,{sz:d.entryTitle,rsz:d.dates});
+    const meta=[e.title?e.company:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic",sz:d.meta});y+=1;bullets(e.bullets,d.bullets);});}
+  if(m.education.length){head("Education");m.education.forEach((e,i)=>{if(i)y+=5;need(30);lr(e.degree||e.school,e.grad,{sz:d.entryTitle,rsz:d.dates});
+    const meta=[e.degree?e.school:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic",sz:d.meta});if(e.gpa)para("GPA: "+e.gpa,{sz:d.meta});});}
+  m.custom.forEach(s=>{head(s.title);s.entries.forEach((x,i)=>{if(i)y+=4;lr([x.name,x.meta].filter(Boolean).join(" - "),x.date,{sz:d.entryTitle,rsz:d.dates});bullets(x.bullets,d.custom);});});
 
   const kws=list(state.job.keywords).slice(0,30).join(", ");
   doc.setProperties({title:(m.name||"Resume")+" - Resume",subject:m.headline||"Resume",author:m.name||"",keywords:kws,creator:"ATS Resume Builder"});
@@ -455,7 +492,7 @@ function computeScore(){
   const found=kws.filter(k=>kwFound(text,k)),missing=kws.filter(k=>!kwFound(text,k));
   const verb=bl.length?bl.filter(b=>isAction(b.split(/\s+/)[0])).length/bl.length:0;
   const quant=bl.length?bl.filter(hasNum).length/bl.length:0;
-  const checks=[!!m.name,!!(state.contact.email||state.contact.phone),m.experience.length>0,m.education.length>0,m.skills.length>=6,!!m.summary];
+  const checks=[!!m.name,!!(state.contact.email||state.contact.phone),m.experience.length>0,m.education.length>0,m.skills.length>=6,!!m.summary||!!state.hideSummary];
   const struct=checks.filter(Boolean).length/checks.length;
   const okLen=bl.length?bl.filter(b=>b.length>=35&&b.length<=230).length/bl.length:0;
   const okCount=m.experience.length?m.experience.filter(e=>e.bullets.length>=3).length/m.experience.length:0;
@@ -470,7 +507,7 @@ function computeScore(){
   else if(missing.length)tips.push(`${missing.length} posting keyword${missing.length>1?"s are":" is"} missing. Click one to add it to Skills, or run Imagine to weave them into bullets.`);
   const weakV=bl.filter(b=>!isAction(b.split(/\s+/)[0]));if(weakV.length)tips.push(`${weakV.length} bullet${weakV.length>1?"s don't":" doesn't"} start with a strong action verb (e.g. "${esc(weakV[0].slice(0,40))}…").`);
   const noN=bl.filter(b=>!hasNum(b)).length;if(noN)tips.push(`${noN} bullet${noN>1?"s have":" has"} no number. Add a %, $, time saved, or scale.`);
-  if(!m.summary)tips.push("Add a short summary that repeats the target job title.");
+  if(!m.summary&&!state.hideSummary)tips.push("Add a short summary that repeats the target job title.");
   if(m.skills.length<6)tips.push("List at least 6 hard skills or tools.");
   if(!(state.contact.email||state.contact.phone))tips.push("Add an email or phone so recruiters can reach you.");
   return{total,parts,found,missing,tips,kws};
@@ -524,7 +561,12 @@ function renderLists(){
       ${fld(`custom/${s.id}/entries/${x.id}/date`,"Date",x.date,{full:true})}${fld(`custom/${s.id}/entries/${x.id}/bullets`,"Details <em>(optional, one per line)</em>",x.bullets,{full:true,ta:true})}</div></div>`).join("")}
     <div class="row"><button class="btn small ghost" type="button" data-act="add-entry" data-id="${s.id}">+ Add entry</button></div></div>`).join("")||`<p class="note">Add certifications, projects, awards, volunteer work or publications.</p>`;
 }
+function renderDesign(){const d=Object.assign({},DESIGN_DEFAULT,state.design);
+  const f=(k,l,step,min,max)=>`<label class="f"><span>${l}</span><input type="number" id="f-design-${k}" data-path="design/${k}" value="${esc(d[k])}" step="${step}" min="${min}" max="${max}" inputmode="decimal"></label>`;
+  $("#marginGrid").innerHTML=MARGIN_FIELDS.map(([k,l])=>f(k,l,0.05,0.25,2)).join("");
+  $("#fontGrid").innerHTML=FONT_FIELDS.map(([k,l])=>f(k,l,0.5,6,36)).join("");}
 function fillStatic(){
+  $("#f-hideSummary").checked=!!state.hideSummary;
   [["f-job-url",state.job.url],["f-job-text",state.job.text],["f-job-keywords",state.job.keywords],["f-name",state.contact.name],["f-phone",state.contact.phone],
    ["f-email",state.contact.email],["f-address",state.contact.address],["f-linkedin",state.contact.linkedin],["f-headline",state.headline],["f-summary",state.summary],["f-skills",state.skills]]
    .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v||"";});
@@ -536,7 +578,7 @@ function setPath(path,val){
 }
 
 /* ---------- events ---------- */
-document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p)return;setPath(p,e.target.value);
+document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p)return;setPath(p,e.target.type==="checkbox"?e.target.checked:e.target.value);
   if(state.example&&!p.startsWith("job/"))state.example=false;
   const it=e.target.closest(".item"),st=it&&it.querySelector(":scope>.item-h strong");
   if(st&&/\/(title|company|school|name)$/.test(p)){const parts=p.split("/");
@@ -557,8 +599,9 @@ document.addEventListener("click",e=>{
   else if(a==="up"||a==="down"){const arr=state[L],i=arr.findIndex(x=>x.id===id),j=a==="up"?i-1:i+1;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];renderLists();refresh();}
   else if(a==="add-skill"){const s=list(state.skills);s.push(b.dataset.kw);state.skills=s.join(", ");$("#f-skills").value=state.skills;refresh();toast(`Added "${b.dataset.kw}" to Skills`);}
   else if(a==="clear-all"){if(b.dataset.armed!=="1"){b.dataset.armed="1";const t=b.textContent;b.textContent="Click again to clear";setTimeout(()=>{b.dataset.armed="";b.textContent=t;},3000);return;}
-    state=blank();state.experience.push(newExp());state.education.push(newEdu());fillStatic();renderLists();refresh();toast("Cleared. Start typing your details.");}
-  else if(a==="load-example"){state=example();fillStatic();renderLists();refresh();}
+    const keepDesign=state.design;state=blank();state.design=keepDesign;state.experience.push(newExp());state.education.push(newEdu());fillStatic();renderLists();refresh();toast("Cleared. Start typing your details.");}
+  else if(a==="load-example"){const keepDesign=state.design;state=example();state.design=keepDesign;fillStatic();renderLists();refresh();}
+  else if(a==="design-reset"){state.design=Object.assign({},DESIGN_DEFAULT);renderDesign();refresh();toast("Design reset to defaults");}
   else if(a==="imagine")imagine();
   else if(a==="modal-close")closeModal();
   else if(a==="modal-apply")applyProposal();
@@ -719,7 +762,7 @@ $("#btnSaveKey").addEventListener("click",()=>{const v=$("#f-apikey").value.trim
 $("#btnForget").addEventListener("click",()=>{storeKey("",false);renderKeyState();toast("Key removed from this browser");});
 renderKeyState();
 
-fillStatic();renderLists();refresh();
+renderDesign();fillStatic();renderLists();refresh();
 window.__resumeTest={buildPDF,model,plainText,computeScore,get state(){return state;}};
 })();
 </script>
