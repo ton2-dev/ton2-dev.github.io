@@ -68,6 +68,16 @@ button{font:inherit;cursor:pointer}
 .dgrid input{font-variant-numeric:tabular-nums}
 .check{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
 .check input{width:16px;height:16px;accent-color:var(--strong)}
+.sections{display:flex;flex-direction:column;gap:14px}
+.grip{border:0;background:none;color:var(--muted);padding:5px;margin:-5px -2px -5px -7px;cursor:grab;touch-action:none;display:grid;place-items:center;border-radius:2px;flex:none}
+.grip:hover{color:var(--fg);background:var(--hover)}
+.grip svg{width:15px;height:15px}
+.sections.reordering{user-select:none;-webkit-user-select:none}
+.sections.reordering .panel>.pbody{display:none}
+.sections.reordering .panel>summary{border-bottom:0}
+.panel.dragging{border-color:var(--strong);box-shadow:0 8px 22px rgba(0,0,0,.2);position:relative;z-index:2}
+.panel.dragging .grip,body.is-dragging{cursor:grabbing}
+.addsec{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .panel>summary h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin:0}
 .panel>summary .hint{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
 .panel>summary::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--fg);border-bottom:1.5px solid var(--fg);transform:rotate(45deg);margin:-3px 2px 0 4px;flex:none}
@@ -133,11 +143,10 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
 
 /* paper preview — always black on white, like the printed page */
 .paper-wrap{container-type:inline-size;background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 0 var(--line)}
-.sheet{--pt:calc(100cqw / 612);--mt:.7;--mb:.7;--ml:.7;--mr:.7;--fs-name:20;--fs-headline:11;--fs-contact:9.5;--fs-heading:11;--fs-entryTitle:10.5;--fs-meta:10;--fs-dates:10;--fs-summary:10;--fs-skills:10;--fs-bullets:10;--fs-custom:10;
+.sheet{--pt:calc(100cqw / 612);--mt:.7;--mb:.7;--ml:.7;--mr:.7;--fs-name:20;--fs-contact:9.5;--fs-heading:11;--fs-entryTitle:10.5;--fs-meta:10;--fs-dates:10;--fs-summary:10;--fs-skills:10;--fs-bullets:10;--fs-custom:10;
   color:var(--ink);background:var(--paper);font-family:var(--resume);
-  font-size:calc(10 * var(--pt));line-height:1.25;padding:calc(var(--mt) * 72 * var(--pt)) calc(var(--mr) * 72 * var(--pt)) calc(var(--mb) * 72 * var(--pt)) calc(var(--ml) * 72 * var(--pt));min-height:calc(792 * var(--pt))}
+  font-size:calc(10 * var(--pt));line-height:var(--lh,1.25);padding:calc(var(--mt) * 72 * var(--pt)) calc(var(--mr) * 72 * var(--pt)) calc(var(--mb) * 72 * var(--pt)) calc(var(--ml) * 72 * var(--pt));min-height:calc(792 * var(--pt))}
 .sheet .nm{font-size:calc(var(--fs-name) * var(--pt));font-weight:700;text-align:center;line-height:1.15}
-.sheet .hl{text-align:center;font-size:calc(var(--fs-headline) * var(--pt));margin-top:calc(3 * var(--pt))}
 .sheet .ct{text-align:center;font-size:calc(var(--fs-contact) * var(--pt));margin-top:calc(4 * var(--pt));overflow-wrap:anywhere}
 .sheet .sec{margin-top:calc(12 * var(--pt))}
 .sheet .sh{font-size:calc(var(--fs-heading) * var(--pt));font-weight:700;text-transform:uppercase;letter-spacing:.02em;border-bottom:calc(.9 * var(--pt)) solid var(--ink);padding-bottom:calc(2 * var(--pt));margin-bottom:calc(6 * var(--pt))}
@@ -149,6 +158,8 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
 .sheet .gpa{font-size:calc(var(--fs-meta) * var(--pt))}
 .sheet .sum{font-size:calc(var(--fs-summary) * var(--pt))}
 .sheet .skl{font-size:calc(var(--fs-skills) * var(--pt))}
+.sheet .skl+.skl{margin-top:calc(var(--fs-skills) * .15 * var(--pt))}
+.sheet .skl b{font-weight:700}
 .sheet ul.exp{font-size:calc(var(--fs-bullets) * var(--pt))}
 .sheet ul.cus{font-size:calc(var(--fs-custom) * var(--pt))}
 .sheet ul{margin:calc(2 * var(--pt)) 0 0;padding-left:1.4em}
@@ -187,7 +198,6 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
   <div class="brand"><h1>ATS Resume Builder</h1><span>plain · parseable · tailored</span></div>
   <div class="actions">
     <button class="btn" id="btnImagine" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.4 3.4l2 2M10.6 10.6l2 2M3.4 12.6l2-2M10.6 5.4l2-2"/></svg>Imagine</button>
-    <button class="btn" id="btnCopy" type="button">Copy as text</button>
     <button class="btn primary" id="btnPdf" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11"/></svg>Generate PDF</button>
   </div>
 </div></header>
@@ -211,6 +221,7 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
         <div class="row"><button class="btn small" type="button" id="btnAnalyze">Analyze posting</button><span class="status" id="jobStatus"></span></div>
         <div class="jobcard" id="jobCard" hidden></div>
         <label class="f"><span>Target keywords <em>(comma separated, used for scoring and Imagine)</em></span><textarea id="f-job-keywords" data-path="job/keywords" rows="3" placeholder="SQL, Python, stakeholder management, A/B testing…"></textarea></label>
+        <label class="f"><span>Extra instructions for Claude <em>(optional, used by Imagine)</em></span><textarea id="f-instructions" data-path="instructions" rows="3" placeholder="e.g. Emphasize leadership and people management. I'm moving from retail into data analytics. Don't mention Excel. Keep bullets short."></textarea></label>
         <div class="row"><button class="btn primary small" type="button" data-act="imagine">Imagine for this job</button><span class="status" id="imagineStatus"></span></div>
       </div>
     </details>
@@ -243,53 +254,54 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
       </div></div>
     </details>
 
-    <details class="panel" open>
-      <summary><h2>Summary</h2><span class="hint">Title line + 2–3 sentences</span></summary>
+    <p class="note">Drag a section by its handle to change where it appears on the resume. The preview and PDF follow this order.</p>
+    <div class="sections" id="sections">
+    <details class="panel" open data-sec="summary">
+      <summary><button type="button" class="grip" aria-label="Reorder section. Drag, or use the up and down arrow keys."><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="3.5" r="1.3"/><circle cx="10.5" cy="3.5" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="12.5" r="1.3"/><circle cx="10.5" cy="12.5" r="1.3"/></svg></button><h2>Summary</h2><span class="hint">2–3 sentences</span></summary>
       <div class="pbody">
-        <label class="f"><span>Professional title <em>(mirror the job title)</em></span><input type="text" id="f-headline" data-path="headline"></label>
         <label class="f"><span>Professional summary</span><textarea id="f-summary" data-path="summary" rows="4"></textarea></label>
         <label class="check"><input type="checkbox" id="f-hideSummary" data-path="hideSummary"> Remove the Summary section from the resume</label>
       </div>
     </details>
 
-    <details class="panel" open>
-      <summary><h2>Skills</h2><span class="hint">Comma separated</span></summary>
+    <details class="panel" open data-sec="skills">
+      <summary><button type="button" class="grip" aria-label="Reorder section. Drag, or use the up and down arrow keys."><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="3.5" r="1.3"/><circle cx="10.5" cy="3.5" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="12.5" r="1.3"/><circle cx="10.5" cy="12.5" r="1.3"/></svg></button><h2>Skills</h2><span class="hint">One category per line</span></summary>
       <div class="pbody">
-        <label class="f"><span>Skills</span><textarea id="f-skills" data-path="skills" rows="3"></textarea></label>
+        <label class="f"><span>Skills <em>(one category per line, e.g. "Languages: SQL, Python". A plain comma list also works.)</em></span><textarea id="f-skills" data-path="skills" rows="4" placeholder="Languages: SQL, Python&#10;Tools: Tableau, Power BI, Excel&#10;Methods: A/B testing, Forecasting"></textarea></label>
       </div>
     </details>
 
-    <details class="panel" open>
-      <summary><h2>Work experience</h2><span class="hint">One bullet per line</span></summary>
+    <details class="panel" open data-sec="experience">
+      <summary><button type="button" class="grip" aria-label="Reorder section. Drag, or use the up and down arrow keys."><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="3.5" r="1.3"/><circle cx="10.5" cy="3.5" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="12.5" r="1.3"/><circle cx="10.5" cy="12.5" r="1.3"/></svg></button><h2>Work experience</h2><span class="hint">One bullet per line</span></summary>
       <div class="pbody"><div id="expList" style="display:flex;flex-direction:column;gap:12px"></div>
         <div class="row"><button class="btn small" type="button" data-act="add-exp">+ Add position</button></div></div>
     </details>
 
-    <details class="panel" open>
-      <summary><h2>Education</h2></summary>
+    <details class="panel" open data-sec="education">
+      <summary><button type="button" class="grip" aria-label="Reorder section. Drag, or use the up and down arrow keys."><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="3.5" r="1.3"/><circle cx="10.5" cy="3.5" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="12.5" r="1.3"/><circle cx="10.5" cy="12.5" r="1.3"/></svg></button><h2>Education</h2></summary>
       <div class="pbody"><div id="eduList" style="display:flex;flex-direction:column;gap:12px"></div>
         <div class="row"><button class="btn small" type="button" data-act="add-edu">+ Add education</button></div></div>
     </details>
 
-    <details class="panel" open>
-      <summary><h2>Custom sections</h2><span class="hint">Certifications, projects, awards…</span></summary>
-      <div class="pbody"><div id="customList" style="display:flex;flex-direction:column;gap:12px"></div>
-        <div class="row">
-          <button class="btn small" type="button" data-act="add-custom" data-title="Certifications">+ Certifications</button>
-          <button class="btn small" type="button" data-act="add-custom" data-title="Projects">+ Projects</button>
-          <button class="btn small ghost" type="button" data-act="add-custom" data-title="">+ Other section</button>
-        </div></div>
-    </details>
+    </div>
+    <div class="addsec"><span class="sub-h">Add a section</span>
+      <button class="btn small" type="button" data-act="add-custom" data-title="Certifications">+ Certifications</button>
+      <button class="btn small" type="button" data-act="add-custom" data-title="Projects">+ Projects</button>
+      <button class="btn small ghost" type="button" data-act="add-custom" data-title="">+ Other section</button>
+    </div>
 
     <details class="panel" id="designPanel">
       <summary><h2>Design</h2><span class="hint">Margins and font sizes</span></summary>
       <div class="pbody">
         <p class="sub-h">Page margins (inches)</p>
         <div class="dgrid" id="marginGrid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr))"></div>
+        <p class="sub-h">Line spacing</p>
+        <div class="dgrid" id="spacingGrid"></div>
         <p class="sub-h">Font sizes (points)</p>
         <div class="dgrid" id="fontGrid"></div>
         <p class="note">Keep body text between 10 and 12 pt and margins between 0.5 and 1 inch for the most readable, ATS-friendly result.</p>
-        <div class="row"><button class="btn small" type="button" data-act="design-reset">Reset to defaults</button></div>
+        <div class="row"><button class="btn small" type="button" data-act="fit-page">Fit to one page</button><button class="btn small ghost" type="button" data-act="design-reset">Reset to defaults</button></div>
+        <p class="note">Imagine fits the resume to exactly one page automatically by adjusting font sizes and margins.</p>
       </div>
     </details>
 
@@ -349,7 +361,7 @@ async function claudeJSON(prompt,opts){
 
 /* ---------- state ---------- */
 function blank(){return{example:false,job:{url:"",text:"",title:"",company:"",location:"",summary:"",keywords:""},
-  contact:{name:"",phone:"",email:"",address:"",linkedin:""},headline:"",summary:"",skills:"",experience:[],education:[],custom:[]};}
+  contact:{name:"",phone:"",email:"",address:"",linkedin:""},summary:"",skills:"",experience:[],education:[],custom:[]};}
 const newExp=()=>({id:uid(),title:"",company:"",location:"",start:"",end:"",bullets:""});
 const newEdu=()=>({id:uid(),degree:"",major:"",school:"",location:"",gpa:"",grad:""});
 const newEntry=()=>({id:uid(),name:"",meta:"",date:"",bullets:""});
@@ -358,9 +370,8 @@ function example(){return{example:true,
     title:"Senior Data Analyst",company:"Northwind Logistics",location:"Chicago, IL",summary:"Own fulfillment reporting, forecasting and experimentation; partner with operations leaders.",
     keywords:"SQL, Python, Tableau, Power BI, A/B testing, statistical analysis, forecasting, ETL, Snowflake, dbt, stakeholder management, dashboards, data visualization, executive reporting"},
   contact:{name:"Jordan Rivera",phone:"(312) 555-0148",email:"jordan.rivera@example.com",address:"Chicago, IL",linkedin:"linkedin.com/in/jordanrivera-example"},
-  headline:"Data Analyst",
   summary:"Data analyst with 5 years of experience turning operational data into decisions. Builds SQL and Python pipelines, dashboards and forecasts that leaders use every week.",
-  skills:"SQL, Python, Tableau, Excel, Forecasting, Data Visualization, Stakeholder Management",
+  skills:"Languages: SQL, Python\nTools: Tableau, Excel\nMethods: Forecasting, Data Visualization, Stakeholder Management",
   experience:[
     {id:uid(),title:"Data Analyst",company:"Lakeshore Supply Co.",location:"Chicago, IL",start:"Mar 2022",end:"Present",
      bullets:"Built Tableau dashboards tracking on-time delivery for 14 warehouses, used weekly by 40+ managers\nAutomated weekly KPI reporting with Python and SQL, cutting prep time from 6 hours to 30 minutes\nResponsible for demand forecasting\nWorked with operations team on inventory reports"},
@@ -369,19 +380,23 @@ function example(){return{example:true,
   education:[{id:uid(),degree:"B.S.",major:"Statistics",school:"University of Illinois Chicago",location:"Chicago, IL",gpa:"3.6",grad:"May 2020"}],
   custom:[{id:uid(),title:"Certifications",entries:[{id:uid(),name:"Tableau Certified Data Analyst",meta:"Tableau",date:"2023",bullets:""}]}]};}
 
-const DESIGN_DEFAULT={marginTop:0.7,marginBottom:0.7,marginLeft:0.7,marginRight:0.7,
-  name:20,headline:11,contact:9.5,heading:11,entryTitle:10.5,meta:10,dates:10,summary:10,skills:10,bullets:10,custom:10};
+const DESIGN_DEFAULT={marginTop:0.7,marginBottom:0.7,marginLeft:0.7,marginRight:0.7,lineSpacing:1.25,
+  name:20,contact:9.5,heading:11,entryTitle:10.5,meta:10,dates:10,summary:10,skills:10,bullets:10,custom:10};
 const MARGIN_FIELDS=[["marginTop","Top"],["marginBottom","Bottom"],["marginLeft","Left"],["marginRight","Right"]];
-const FONT_FIELDS=[["name","Name"],["headline","Professional title"],["contact","Contact line"],["heading","Section headings"],
+const FONT_FIELDS=[["name","Name"],["contact","Contact line"],["heading","Section headings"],
   ["summary","Summary text"],["skills","Skills text"],["entryTitle","Job titles & degrees"],["meta","Company & school lines"],
   ["dates","Dates"],["bullets","Job description bullets"],["custom","Custom section details"]];
 function design(){const d=Object.assign({},DESIGN_DEFAULT,state.design||{}),o={};
   for(const k in DESIGN_DEFAULT){let v=parseFloat(d[k]);if(!isFinite(v))v=DESIGN_DEFAULT[k];
-    o[k]=k.startsWith("margin")?Math.min(2,Math.max(0.25,v)):Math.min(36,Math.max(6,v));}return o;}
+    o[k]=k.startsWith("margin")?Math.min(2,Math.max(0.25,v)):k==="lineSpacing"?Math.min(2,Math.max(1,v)):Math.min(36,Math.max(6,v));}return o;}
+const BASE_SECTIONS=["summary","skills","experience","education"];
+function sectionOrder(){const keys=BASE_SECTIONS.concat(state.custom.map(c=>"custom:"+c.id));
+  const o=(state.sectionOrder||[]).filter(k=>keys.includes(k));keys.forEach(k=>{if(!o.includes(k))o.push(k);});state.sectionOrder=o;return o;}
 let state;
 try{const raw=localStorage.getItem(KEY);state=raw?Object.assign(blank(),JSON.parse(raw)):example();}catch(e){state=example();}
 state.design=Object.assign({},DESIGN_DEFAULT,state.design||{});
 let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}},300);}
+window.addEventListener("pagehide",()=>{clearTimeout(saveT);try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}});
 
 /* ---------- helpers ---------- */
 const lines=t=>String(t||"").split(/\r?\n/).map(s=>s.replace(/^\s*(?:[-*•·▪◦‣–]|\d+[.)])\s*/,"").trim()).filter(Boolean);
@@ -390,47 +405,56 @@ const dateRange=(a,b)=>[a,b].map(s=>(s||"").trim()).filter(Boolean).join(" - ");
 function cleanText(s){return String(s??"").replace(/[‘’‛′]/g,"'").replace(/[“”″]/g,'"').replace(/[–—−]/g,"-")
   .replace(/…/g,"...").replace(/[   ]/g," ").replace(/[^\x09\x0A\x0D\x20-\x7E¡-ÿ]/g,"").trim();}
 
+function skillGroups(t){const out=[];
+  String(t||"").split(/\r?\n/).forEach(line=>{line=line.trim();if(!line)return;
+    const m=line.match(/^([^:,]{1,40}):\s*(.*)$/);
+    if(m){const items=list(m[2]);if(items.length)out.push({title:m[1].trim(),items});}
+    else{const items=list(line);if(!items.length)return;const last=out[out.length-1];if(last&&!last.title)last.items.push(...items);else out.push({title:"",items});}});
+  return out;}
+const groupsToText=g=>g.map(x=>(x.title?x.title+": ":"")+x.items.join(", ")).join("\n");
 function model(st){
   const c=st.contact;
   return{
-    name:(c.name||"").trim(),headline:(st.headline||"").trim(),
+    name:(c.name||"").trim(),
     contact:[c.address,c.phone,c.email,c.linkedin].map(s=>(s||"").trim()).filter(Boolean),
-    summary:st.hideSummary?"":(st.summary||"").trim(),skills:list(st.skills),
+    summary:st.hideSummary?"":(st.summary||"").trim(),skillGroups:skillGroups(st.skills),skills:list(skillGroups(st.skills).flatMap(g=>g.items).join(",")),
     experience:st.experience.filter(e=>e.title||e.company||e.bullets).map(e=>({id:e.id,title:e.title.trim(),company:e.company.trim(),location:e.location.trim(),dates:dateRange(e.start,e.end),bullets:lines(e.bullets)})),
     education:st.education.filter(e=>e.degree||e.school||e.major).map(e=>({degree:[e.degree.trim(),e.major.trim()].filter(Boolean).join(e.degree&&e.major?", ":""),school:e.school.trim(),location:e.location.trim(),grad:e.grad.trim(),gpa:e.gpa.trim()})),
-    custom:st.custom.map(s=>({title:(s.title||"").trim()||"Additional",entries:s.entries.filter(x=>x.name||x.bullets).map(x=>({name:x.name.trim(),meta:x.meta.trim(),date:x.date.trim(),bullets:lines(x.bullets)}))})).filter(s=>s.entries.length)
+    order:sectionOrder(),
+    custom:st.custom.map(s=>({id:s.id,title:(s.title||"").trim()||"Additional",entries:s.entries.filter(x=>x.name||x.bullets).map(x=>({name:x.name.trim(),meta:x.meta.trim(),date:x.date.trim(),bullets:lines(x.bullets)}))})).filter(s=>s.entries.length)
   };
 }
 
 function plainText(m){
   const o=[];
-  if(m.name)o.push(m.name);if(m.headline)o.push(m.headline);if(m.contact.length)o.push(m.contact.join(" | "));
-  if(m.summary)o.push("","SUMMARY",m.summary);
-  if(m.skills.length)o.push("","SKILLS",m.skills.join(", "));
-  if(m.experience.length){o.push("","EXPERIENCE");m.experience.forEach(e=>{o.push("",[e.title,e.company].filter(Boolean).join(" - ")+(e.dates?"  ("+e.dates+")":""));if(e.location)o.push(e.location);e.bullets.forEach(b=>o.push("- "+b));});}
-  if(m.education.length){o.push("","EDUCATION");m.education.forEach(e=>{o.push("",e.degree+(e.grad?"  ("+e.grad+")":""));o.push([e.school,e.location].filter(Boolean).join(", "));if(e.gpa)o.push("GPA: "+e.gpa);});}
-  m.custom.forEach(s=>{o.push("",s.title.toUpperCase());s.entries.forEach(x=>{o.push([x.name,x.meta].filter(Boolean).join(" - ")+(x.date?"  ("+x.date+")":""));x.bullets.forEach(b=>o.push("- "+b));});});
+  if(m.name)o.push(m.name);if(m.contact.length)o.push(m.contact.join(" | "));
+  const cust=k=>k.startsWith("custom:")?m.custom.find(c=>"custom:"+c.id===k):null;
+  const R={summary(){if(m.summary)o.push("","SUMMARY",m.summary);},
+  skills(){if(m.skills.length)o.push("","SKILLS",groupsToText(m.skillGroups));},
+  experience(){if(m.experience.length){o.push("","EXPERIENCE");m.experience.forEach(e=>{o.push("",[e.title,e.company].filter(Boolean).join(" - ")+(e.dates?"  ("+e.dates+")":""));if(e.location)o.push(e.location);e.bullets.forEach(b=>o.push("- "+b));});}},
+  education(){if(m.education.length){o.push("","EDUCATION");m.education.forEach(e=>{o.push("",e.degree+(e.grad?"  ("+e.grad+")":""));o.push([e.school,e.location].filter(Boolean).join(", "));if(e.gpa)o.push("GPA: "+e.gpa);});}}};
+  m.order.forEach(k=>{if(R[k])return R[k]();const s=cust(k);if(!s)return;o.push("",s.title.toUpperCase());s.entries.forEach(x=>{o.push([x.name,x.meta].filter(Boolean).join(" - ")+(x.date?"  ("+x.date+")":""));x.bullets.forEach(b=>o.push("- "+b));});});
   return o.join("\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 
 /* ---------- preview ---------- */
 function applyDesignVars(el){const d=design();
   el.style.setProperty("--mt",d.marginTop);el.style.setProperty("--mb",d.marginBottom);el.style.setProperty("--ml",d.marginLeft);el.style.setProperty("--mr",d.marginRight);
-  FONT_FIELDS.forEach(([k])=>el.style.setProperty("--fs-"+k,d[k]));}
+  FONT_FIELDS.forEach(([k])=>el.style.setProperty("--fs-"+k,d[k]));el.style.setProperty("--lh",d.lineSpacing);}
 function renderSheet(){
   const m=model(state),el=$("#sheet");applyDesignVars(el);
   if(!m.name&&!m.experience.length&&!m.summary){el.innerHTML='<p class="empty">Your resume preview appears here as you type.</p>';return;}
   const h=[];
   h.push(`<div class="nm">${esc(m.name||"Your Name")}</div>`);
-  if(m.headline)h.push(`<div class="hl">${esc(m.headline)}</div>`);
   if(m.contact.length)h.push(`<div class="ct">${m.contact.map(esc).join(" &nbsp;|&nbsp; ")}</div>`);
   const sec=(t,b)=>h.push(`<div class="sec"><div class="sh">${esc(t)}</div>${b}</div>`);
   const ul=(a,c)=>a.length?`<ul class="${c}">${a.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>`:"";
-  if(m.summary)sec("Summary",`<p class="sum">${esc(m.summary)}</p>`);
-  if(m.skills.length)sec("Skills",`<p class="skl">${m.skills.map(esc).join(", ")}</p>`);
-  if(m.experience.length)sec("Experience",m.experience.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.title)}</b></span><span>${esc(e.dates)}</span></div><div class="meta">${esc([e.company,e.location].filter(Boolean).join(", "))}</div>${ul(e.bullets,"exp")}</div>`).join(""));
-  if(m.education.length)sec("Education",m.education.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.degree)}</b></span><span>${esc(e.grad)}</span></div><div class="meta">${esc([e.school,e.location].filter(Boolean).join(", "))}</div>${e.gpa?`<p class="gpa">GPA: ${esc(e.gpa)}</p>`:""}</div>`).join(""));
-  m.custom.forEach(s=>sec(s.title,s.entries.map(x=>`<div class="ent"><div class="lr"><span><b>${esc(x.name)}</b>${x.meta?" - "+esc(x.meta):""}</span><span>${esc(x.date)}</span></div>${ul(x.bullets,"cus")}</div>`).join("")));
+  const cust=k=>k.startsWith("custom:")?m.custom.find(c=>"custom:"+c.id===k):null;
+  const R={summary(){if(m.summary)sec("Summary",`<p class="sum">${esc(m.summary)}</p>`);},
+  skills(){if(m.skills.length)sec("Skills",m.skillGroups.map(g=>`<p class="skl">${g.title?`<b>${esc(g.title)}:</b> `:""}${g.items.map(esc).join(", ")}</p>`).join(""));},
+  experience(){if(m.experience.length)sec("Experience",m.experience.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.title)}</b></span><span>${esc(e.dates)}</span></div><div class="meta">${esc([e.company,e.location].filter(Boolean).join(", "))}</div>${ul(e.bullets,"exp")}</div>`).join(""));},
+  education(){if(m.education.length)sec("Education",m.education.map(e=>`<div class="ent"><div class="lr"><span><b>${esc(e.degree)}</b></span><span>${esc(e.grad)}</span></div><div class="meta">${esc([e.school,e.location].filter(Boolean).join(", "))}</div>${e.gpa?`<p class="gpa">GPA: ${esc(e.gpa)}</p>`:""}</div>`).join(""));}};
+  m.order.forEach(k=>{if(R[k])return R[k]();const s=cust(k);if(s)sec(s.title,s.entries.map(x=>`<div class="ent"><div class="lr"><span><b>${esc(x.name)}</b>${x.meta?" - "+esc(x.meta):""}</span><span>${esc(x.date)}</span></div>${ul(x.bullets,"cus")}</div>`).join(""));});
   el.innerHTML=h.join("");
 }
 
@@ -441,7 +465,7 @@ function buildPDF(m){
   const d=design();
   const W=612,H=792,ML=d.marginLeft*72,MR=d.marginRight*72,MT=d.marginTop*72,MB=d.marginBottom*72,CW=W-ML-MR;let y=MT;
   const set=(st,sz)=>{doc.setFont("helvetica",st);doc.setFontSize(sz);};
-  const LH=sz=>sz*1.25;
+  const LH=sz=>sz*d.lineSpacing;
   const need=h=>{if(y+h>H-MB){doc.addPage();y=MT;}};
   doc.setTextColor(0,0,0);doc.setDrawColor(0,0,0);
   function para(t,{st="normal",sz=10,align="left"}={}){
@@ -456,22 +480,82 @@ function buildPDF(m){
   }
   function bullets(arr,sz){const ind=sz*1.4;arr.forEach(b=>{set("normal",sz);const ls=doc.splitTextToSize(cleanText(b),CW-ind);need(LH(sz));
     doc.text("\u2022",ML+sz*.3,y,{baseline:"top"});ls.forEach((l,i)=>{if(i)need(LH(sz));doc.text(l,ML+ind,y,{baseline:"top"});y+=LH(sz);});y+=sz*.15;});}
+  function labeled(label,text,sz){set("bold",sz);const lw=doc.getTextWidth(cleanText(label)+" ");set("normal",sz);
+    const words=cleanText(text).split(/\s+/).filter(Boolean);let first="";
+    while(words.length){const t=first?first+" "+words[0]:words[0];if(doc.getTextWidth(t)<=CW-lw||!first&&lw>CW*.6){first=t;words.shift();}else break;}
+    need(LH(sz));set("bold",sz);doc.text(cleanText(label),ML,y,{baseline:"top"});set("normal",sz);if(first)doc.text(first,ML+lw,y,{baseline:"top"});y+=LH(sz);
+    if(words.length)doc.splitTextToSize(words.join(" "),CW).forEach(l=>{need(LH(sz));doc.text(l,ML,y,{baseline:"top"});y+=LH(sz);});
+    y+=sz*.15;}
   function head(t){need(d.heading*4.4);y+=d.heading*.8;set("bold",d.heading);doc.text(cleanText(t).toUpperCase(),ML,y,{baseline:"top"});y+=LH(d.heading)+1;doc.setLineWidth(.9);doc.line(ML,y,W-MR,y);y+=6;}
 
   para(m.name||"Your Name",{st:"bold",sz:d.name,align:"center"});
-  if(m.headline){y+=1;para(m.headline,{sz:d.headline,align:"center"});}
   if(m.contact.length){y+=2;para(m.contact.join("  |  "),{sz:d.contact,align:"center"});}
-  if(m.summary){head("Summary");para(m.summary,{sz:d.summary});}
-  if(m.skills.length){head("Skills");para(m.skills.join(", "),{sz:d.skills});}
-  if(m.experience.length){head("Experience");m.experience.forEach((e,i)=>{if(i)y+=6;need(40);lr(e.title||e.company,e.dates,{sz:d.entryTitle,rsz:d.dates});
-    const meta=[e.title?e.company:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic",sz:d.meta});y+=1;bullets(e.bullets,d.bullets);});}
-  if(m.education.length){head("Education");m.education.forEach((e,i)=>{if(i)y+=5;need(30);lr(e.degree||e.school,e.grad,{sz:d.entryTitle,rsz:d.dates});
-    const meta=[e.degree?e.school:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic",sz:d.meta});if(e.gpa)para("GPA: "+e.gpa,{sz:d.meta});});}
-  m.custom.forEach(s=>{head(s.title);s.entries.forEach((x,i)=>{if(i)y+=4;lr([x.name,x.meta].filter(Boolean).join(" - "),x.date,{sz:d.entryTitle,rsz:d.dates});bullets(x.bullets,d.custom);});});
+  const cust=k=>k.startsWith("custom:")?m.custom.find(c=>"custom:"+c.id===k):null;
+  const R={summary(){if(m.summary){head("Summary");para(m.summary,{sz:d.summary});}},
+  skills(){if(m.skills.length){head("Skills");m.skillGroups.forEach(g=>g.title?labeled(g.title+":",g.items.join(", "),d.skills):para(g.items.join(", "),{sz:d.skills}));}},
+  experience(){if(m.experience.length){head("Experience");m.experience.forEach((e,i)=>{if(i)y+=6;need(40);lr(e.title||e.company,e.dates,{sz:d.entryTitle,rsz:d.dates});
+    const meta=[e.title?e.company:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic",sz:d.meta});y+=1;bullets(e.bullets,d.bullets);});}},
+  education(){if(m.education.length){head("Education");m.education.forEach((e,i)=>{if(i)y+=5;need(30);lr(e.degree||e.school,e.grad,{sz:d.entryTitle,rsz:d.dates});
+    const meta=[e.degree?e.school:"",e.location].filter(Boolean).join(", ");if(meta)para(meta,{st:"italic",sz:d.meta});if(e.gpa)para("GPA: "+e.gpa,{sz:d.meta});});}}};
+  m.order.forEach(k=>{if(R[k])return R[k]();const s=cust(k);if(!s)return;head(s.title);s.entries.forEach((x,i)=>{if(i)y+=4;lr([x.name,x.meta].filter(Boolean).join(" - "),x.date,{sz:d.entryTitle,rsz:d.dates});bullets(x.bullets,d.custom);});});
 
   const kws=list(state.job.keywords).slice(0,30).join(", ");
-  doc.setProperties({title:(m.name||"Resume")+" - Resume",subject:m.headline||"Resume",author:m.name||"",keywords:kws,creator:"ATS Resume Builder"});
+  doc.setProperties({title:(m.name||"Resume")+" - Resume",subject:state.job.title||"Resume",author:m.name||"",keywords:kws,creator:"ATS Resume Builder"});
+  doc.__endY=y;doc.__limit=H-MB;
   return doc;
+}
+
+/* ---------- one-page fitting ---------- */
+const FONT_KEYS=()=>FONT_FIELDS.map(f=>f[0]);
+function measure(des){const keep=state.design;state.design=des;
+  try{const doc=buildPDF(model(state));return{pages:doc.getNumberOfPages(),endY:doc.__endY,limit:doc.__limit};}finally{state.design=keep;}}
+function scaledDesign(base,s,mg,ls){const d=Object.assign({},base);FONT_KEYS().forEach(k=>d[k]=Math.round(base[k]*s*100)/100);
+  ["marginTop","marginBottom","marginLeft","marginRight"].forEach(k=>d[k]=Math.round(mg*100)/100);d.lineSpacing=Math.round((ls||1.25)*1000)/1000;return d;}
+/* Largest font scale (body 9-12 pt), then margins (0.5-1 in) and line spacing (1.15-1.5) that keep everything on one page with as little empty space as possible. */
+function fitSizes(){
+  const base=design(),body=base.bullets||10,lo=9/body,hi=12/body;
+  const ok=(s,mg,ls)=>measure(scaledDesign(base,s,mg,ls)).pages===1;
+  const search=(a,b,test,n)=>{for(let i=0;i<(n||14);i++){const m=(a+b)/2;if(test(m))a=m;else b=m;}return a;};
+  let mg=0.7,ls=1.25;
+  if(!ok(lo,mg,ls)){mg=0.5;if(!ok(lo,mg,ls)){ls=1.15;if(!ok(lo,mg,ls))return{fits:false,design:scaledDesign(base,lo,0.5,1.15)};}}
+  let sc;
+  if(ok(hi,mg,ls)){sc=hi;
+    mg=ok(hi,1,ls)?1:Math.floor(search(mg,1,m=>ok(hi,m,ls))*100)/100;
+    if(mg===1)ls=search(ls,1.5,x=>ok(hi,1,x));
+  }else{
+    sc=search(lo,hi,x=>ok(x,mg,ls),16);
+    if(ls===1.25)ls=search(1.25,1.5,x=>ok(sc,mg,x),10);
+  }
+  const d=scaledDesign(base,sc,mg,ls);
+  return{fits:measure(d).pages===1,design:d};
+}
+/* Guarantee one page: shrink type and margins first, then drop the least important bullets only if still needed. */
+function fitToOnePage(){
+  const removed=[];let r=fitSizes(),guard=300;
+  const minFits=()=>{const base=design();return measure(scaledDesign(base,9/(base.bullets||10),0.5,1.15)).pages===1;};
+  while(!r.fits&&guard--){
+    let target=null,max=2;
+    state.experience.forEach(e=>{const n=lines(e.bullets).length;if(n>2&&n>=max){max=n;target=e;}});
+    if(!target){const ents=state.custom.flatMap(s=>s.entries).filter(x=>lines(x.bullets).length);target=ents[ents.length-1]||null;}
+    if(!target)state.experience.slice().reverse().some(e=>{if(lines(e.bullets).length>1){target=e;return true;}return false;});
+    if(!target)break;
+    const ls=lines(target.bullets);removed.push(ls.pop());target.bullets=ls.join("\n");if(minFits())r=fitSizes();
+  }
+  state.design=r.design;return{fits:r.fits,removed};
+}
+/* Roughly how many lines of body text are free for the summary, skills and bullets on one page. */
+function lineBudget(){
+  const keep={summary:state.summary,hide:state.hideSummary,skills:state.skills,exp:state.experience.map(e=>e.bullets),cus:state.custom.map(s=>s.entries.map(x=>x.bullets)),design:state.design};
+  try{
+    const d=Object.assign({},DESIGN_DEFAULT);["summary","skills","bullets","custom","meta","dates"].forEach(k=>d[k]=10.5);d.entryTitle=11;
+    ["marginTop","marginBottom","marginLeft","marginRight"].forEach(k=>d[k]=0.6);
+    state.summary="x";state.skills="x";state.experience.forEach(e=>e.bullets="x");state.custom.forEach(s=>s.entries.forEach(x=>x.bullets=""));
+    const r=measure(d),lh=10.5*1.25,ph=(state.hideSummary?0:1)+1+state.experience.length;
+    const lines_=Math.max(8,Math.floor((r.limit-r.endY)/(lh+0.6))+ph);
+    const cw=612-2*0.6*72-14,chars=Math.round(cw/(10.5*0.5));
+    return{lines:lines_,chars};
+  }finally{state.summary=keep.summary;state.hideSummary=keep.hide;state.skills=keep.skills;state.experience.forEach((e,i)=>e.bullets=keep.exp[i]);
+    state.custom.forEach((s,i)=>s.entries.forEach((x,j)=>x.bullets=keep.cus[i][j]));state.design=keep.design;}
 }
 
 /* ---------- ATS score ---------- */
@@ -542,6 +626,7 @@ const ico={up:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke
   down:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6l4 4 4-4"/></svg>',
   del:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 9h5.8l.6-9"/></svg>'};
 const fld=(path,label,val,{type="text",full=false,ta=false,ph=""}={})=>`<label class="f${full?" full":""}"><span>${label}</span>${ta?`<textarea class="bul" id="f-${path.replace(/\//g,"-")}" data-path="${path}" placeholder="${esc(ph)}">${esc(val)}</textarea>`:`<input type="${type}" id="f-${path.replace(/\//g,"-")}" data-path="${path}" value="${esc(val)}" placeholder="${esc(ph)}">`}</label>`;
+const GRIP='<button type="button" class="grip" aria-label="Reorder section. Drag, or use the up and down arrow keys."><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="3.5" r="1.3"/><circle cx="10.5" cy="3.5" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="12.5" r="1.3"/><circle cx="10.5" cy="12.5" r="1.3"/></svg></button>';
 const ctrls=(list,id,extra="")=>`<button type="button" class="icon-btn" data-act="up" data-list="${list}" data-id="${id}" aria-label="Move up">${ico.up}</button><button type="button" class="icon-btn" data-act="down" data-list="${list}" data-id="${id}" aria-label="Move down">${ico.down}</button><button type="button" class="icon-btn" data-act="del" data-list="${list}" data-id="${id}" ${extra} aria-label="Remove">${ico.del}</button>`;
 
 function renderLists(){
@@ -554,21 +639,48 @@ function renderLists(){
     <div class="grid">${fld(`education/${e.id}/degree`,"Degree",e.degree,{ph:"B.S."})}${fld(`education/${e.id}/major`,"Major",e.major)}
     ${fld(`education/${e.id}/school`,"University",e.school)}${fld(`education/${e.id}/location`,"Location",e.location)}
     ${fld(`education/${e.id}/gpa`,"GPA <em>(optional)</em>",e.gpa)}${fld(`education/${e.id}/grad`,"Graduation date <em>(optional)</em>",e.grad,{ph:"May 2020"})}</div></div>`).join(""):`<p class="note">No education yet.</p>`;
-  $("#customList").innerHTML=state.custom.map(s=>`<div class="item"><div class="item-h"><strong>${esc(s.title||"Custom section")}</strong>${ctrls("custom",s.id)}</div>
-    ${fld(`custom/${s.id}/title`,"Section title",s.title,{ph:"Certifications"})}
-    ${s.entries.map(x=>`<div class="item" style="padding:10px"><div class="item-h"><strong>${esc(x.name||"New entry")}</strong><button type="button" class="icon-btn" data-act="del-entry" data-id="${s.id}" data-eid="${x.id}" aria-label="Remove entry">${ico.del}</button></div>
+  const box=$("#sections"),old=[...box.querySelectorAll(':scope>[data-sec^="custom:"]')];
+  const closed=new Set(old.filter(p=>!p.open).map(p=>p.dataset.sec));old.forEach(p=>p.remove());
+  box.insertAdjacentHTML("beforeend",state.custom.map(s=>`<details class="panel" data-sec="custom:${s.id}"${closed.has("custom:"+s.id)?"":" open"}>
+    <summary>${GRIP}<h2>${esc(s.title||"Custom section")}</h2><span class="hint">Custom section</span><button type="button" class="icon-btn" data-act="del" data-list="custom" data-id="${s.id}" aria-label="Remove this section">${ico.del}</button></summary>
+    <div class="pbody">${fld(`custom/${s.id}/title`,"Section title",s.title,{ph:"Certifications"})}
+    ${s.entries.map(x=>`<div class="item"><div class="item-h"><strong>${esc(x.name||"New entry")}</strong><button type="button" class="icon-btn" data-act="del-entry" data-id="${s.id}" data-eid="${x.id}" aria-label="Remove entry">${ico.del}</button></div>
       <div class="grid">${fld(`custom/${s.id}/entries/${x.id}/name`,"Name",x.name)}${fld(`custom/${s.id}/entries/${x.id}/meta`,"Issuer / role / link",x.meta)}
       ${fld(`custom/${s.id}/entries/${x.id}/date`,"Date",x.date,{full:true})}${fld(`custom/${s.id}/entries/${x.id}/bullets`,"Details <em>(optional, one per line)</em>",x.bullets,{full:true,ta:true})}</div></div>`).join("")}
-    <div class="row"><button class="btn small ghost" type="button" data-act="add-entry" data-id="${s.id}">+ Add entry</button></div></div>`).join("")||`<p class="note">Add certifications, projects, awards, volunteer work or publications.</p>`;
+    <div class="row"><button class="btn small ghost" type="button" data-act="add-entry" data-id="${s.id}">+ Add entry</button></div></div></details>`).join(""));
+  arrangePanels();
 }
+function arrangePanels(){const box=$("#sections");sectionOrder().forEach(k=>{const p=box.querySelector(`:scope>[data-sec="${k}"]`);if(p)box.appendChild(p);});}
+function commitOrder(){state.sectionOrder=[...$("#sections").children].map(p=>p.dataset.sec).filter(Boolean);state.example=false;refresh();}
+
+/* drag to reorder sections (pointer: mouse, pen and touch) */
+let drag=null;
+function keepPanelPlaced(panel,fn){const before=panel.getBoundingClientRect().top;fn();window.scrollBy(0,panel.getBoundingClientRect().top-before);}
+document.addEventListener("pointerdown",e=>{const g=e.target.closest(".grip");if(!g||e.button>0)return;e.preventDefault();
+  const panel=g.closest(".panel"),box=$("#sections");
+  keepPanelPlaced(panel,()=>{box.classList.add("reordering");panel.classList.add("dragging");document.body.classList.add("is-dragging");});
+  drag={panel,box,grip:g,y:e.clientY};try{g.setPointerCapture(e.pointerId);}catch(_){}
+  drag.timer=setInterval(()=>{if(!drag)return;const edge=70;if(drag.y<edge)window.scrollBy(0,-12);else if(drag.y>innerHeight-edge)window.scrollBy(0,12);else return;placeDrag();},16);
+});
+function placeDrag(){const {panel,box,y}=drag;let target=null;
+  for(const s of box.children){if(s===panel)continue;const r=s.getBoundingClientRect();if(y<r.top+r.height/2){target=s;break;}}
+  if(target){if(panel.nextElementSibling!==target)box.insertBefore(panel,target);}else if(box.lastElementChild!==panel)box.appendChild(panel);}
+document.addEventListener("pointermove",e=>{if(!drag)return;drag.y=e.clientY;placeDrag();});
+function endDrag(){if(!drag)return;const {panel,box,timer}=drag;clearInterval(timer);drag=null;
+  keepPanelPlaced(panel,()=>{box.classList.remove("reordering");panel.classList.remove("dragging");document.body.classList.remove("is-dragging");});commitOrder();}
+document.addEventListener("pointerup",endDrag);document.addEventListener("pointercancel",endDrag);
+document.addEventListener("keydown",e=>{const g=e.target.closest&&e.target.closest(".grip");if(!g||(e.key!=="ArrowUp"&&e.key!=="ArrowDown"))return;e.preventDefault();
+  const p=g.closest(".panel"),box=$("#sections");if(e.key==="ArrowUp"&&p.previousElementSibling)box.insertBefore(p,p.previousElementSibling);
+  else if(e.key==="ArrowDown"&&p.nextElementSibling)box.insertBefore(p.nextElementSibling,p);else return;g.focus();commitOrder();toast("Section moved");});
 function renderDesign(){const d=Object.assign({},DESIGN_DEFAULT,state.design);
   const f=(k,l,step,min,max)=>`<label class="f"><span>${l}</span><input type="number" id="f-design-${k}" data-path="design/${k}" value="${esc(d[k])}" step="${step}" min="${min}" max="${max}" inputmode="decimal"></label>`;
   $("#marginGrid").innerHTML=MARGIN_FIELDS.map(([k,l])=>f(k,l,0.05,0.25,2)).join("");
+  $("#spacingGrid").innerHTML=f("lineSpacing","Line height (× font size)",0.05,1,2);
   $("#fontGrid").innerHTML=FONT_FIELDS.map(([k,l])=>f(k,l,0.5,6,36)).join("");}
 function fillStatic(){
   $("#f-hideSummary").checked=!!state.hideSummary;
   [["f-job-url",state.job.url],["f-job-text",state.job.text],["f-job-keywords",state.job.keywords],["f-name",state.contact.name],["f-phone",state.contact.phone],
-   ["f-email",state.contact.email],["f-address",state.contact.address],["f-linkedin",state.contact.linkedin],["f-headline",state.headline],["f-summary",state.summary],["f-skills",state.skills]]
+   ["f-email",state.contact.email],["f-address",state.contact.address],["f-linkedin",state.contact.linkedin],["f-summary",state.summary],["f-skills",state.skills],["f-instructions",state.instructions]]
    .forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v||"";});
 }
 function setPath(path,val){
@@ -580,6 +692,7 @@ function setPath(path,val){
 /* ---------- events ---------- */
 document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p)return;setPath(p,e.target.type==="checkbox"?e.target.checked:e.target.value);
   if(state.example&&!p.startsWith("job/"))state.example=false;
+  if(/^custom\/[^/]+\/title$/.test(p)){const h=e.target.closest(".panel").querySelector(":scope>summary h2");if(h)h.textContent=e.target.value||"Custom section";}
   const it=e.target.closest(".item"),st=it&&it.querySelector(":scope>.item-h strong");
   if(st&&/\/(title|company|school|name)$/.test(p)){const parts=p.split("/");
     if(parts[0]==="experience"){const x=state.experience.find(q=>q.id===parts[1]);st.textContent=(x.title||"New position")+(x.company?" · "+x.company:"");}
@@ -589,18 +702,22 @@ document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset
   refresh();});
 
 document.addEventListener("click",e=>{
-  const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act,L=b.dataset.list,id=b.dataset.id;
+  if(e.target.closest(".grip")){e.preventDefault();return;}
+  const b=e.target.closest("[data-act]");if(!b)return;if(b.closest("summary"))e.preventDefault();const a=b.dataset.act,L=b.dataset.list,id=b.dataset.id;
   if(a==="add-exp"){state.experience.push(newExp());renderLists();refresh();}
   else if(a==="add-edu"){state.education.push(newEdu());renderLists();refresh();}
-  else if(a==="add-custom"){state.custom.push({id:uid(),title:b.dataset.title||"",entries:[newEntry()]});renderLists();refresh();}
+  else if(a==="add-custom"){const ns={id:uid(),title:b.dataset.title||"",entries:[newEntry()]};state.custom.push(ns);renderLists();refresh();
+    const np=document.querySelector(`[data-sec="custom:${ns.id}"]`);if(np)np.scrollIntoView({behavior:"smooth",block:"center"});}
   else if(a==="add-entry"){state.custom.find(s=>s.id===id).entries.push(newEntry());renderLists();refresh();}
   else if(a==="del-entry"){const s=state.custom.find(s=>s.id===id);s.entries=s.entries.filter(x=>x.id!==b.dataset.eid);renderLists();refresh();}
   else if(a==="del"){state[L]=state[L].filter(x=>x.id!==id);renderLists();refresh();}
   else if(a==="up"||a==="down"){const arr=state[L],i=arr.findIndex(x=>x.id===id),j=a==="up"?i-1:i+1;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];renderLists();refresh();}
-  else if(a==="add-skill"){const s=list(state.skills);s.push(b.dataset.kw);state.skills=s.join(", ");$("#f-skills").value=state.skills;refresh();toast(`Added "${b.dataset.kw}" to Skills`);}
+  else if(a==="add-skill"){if(skillGroups(state.skills).some(g=>g.title))state.skills=state.skills.replace(/\s+$/,"")+", "+b.dataset.kw;else{const s=list(state.skills);s.push(b.dataset.kw);state.skills=s.join(", ");}$("#f-skills").value=state.skills;refresh();toast(`Added "${b.dataset.kw}" to Skills`);}
   else if(a==="clear-all"){if(b.dataset.armed!=="1"){b.dataset.armed="1";const t=b.textContent;b.textContent="Click again to clear";setTimeout(()=>{b.dataset.armed="";b.textContent=t;},3000);return;}
-    const keepDesign=state.design;state=blank();state.design=keepDesign;state.experience.push(newExp());state.education.push(newEdu());fillStatic();renderLists();refresh();toast("Cleared. Start typing your details.");}
+    const keepDesign=state.design,keepInstr=state.instructions;state=blank();state.design=keepDesign;state.instructions=keepInstr;state.experience.push(newExp());state.education.push(newEdu());fillStatic();renderLists();refresh();toast("Cleared. Start typing your details.");}
   else if(a==="load-example"){const keepDesign=state.design;state=example();state.design=keepDesign;fillStatic();renderLists();refresh();}
+  else if(a==="fit-page"){const r=fitSizes();if(r.fits){state.design=r.design;renderDesign();refresh();toast("Sized to fill one page");}
+    else toast("Too long for one page even at 9 pt with 0.5 in margins. Remove some bullets, or run Imagine to rewrite it to fit.");}
   else if(a==="design-reset"){state.design=Object.assign({},DESIGN_DEFAULT);renderDesign();refresh();toast("Design reset to defaults");}
   else if(a==="imagine")imagine();
   else if(a==="modal-close")closeModal();
@@ -658,10 +775,11 @@ async function imagine(){
   if(imagining)return;
   if(!getKey()){toast("Imagine needs your Anthropic API key. Add it in Claude settings.");status("imagineStatus","Add your API key in Claude settings first.",true);openSettings();return;}
   const m=model(state);
-  if(!m.experience.length&&!m.headline&&!state.job.title){status("imagineStatus","Add at least one position or a target job first.",true);toast("Add a position or target job first.");return;}
+  if(!m.experience.length&&!state.job.title){status("imagineStatus","Add at least one position or a target job first.",true);toast("Add a position or target job first.");return;}
   imagining=true;const btns=[$("#btnImagine"),document.querySelector('[data-act="imagine"]')];btns.forEach(b=>b.disabled=true);
   status("imagineStatus","Claude is tailoring your resume…");const t0=Date.now();
-  const resume={headline:state.headline,summary:state.summary,skills:list(state.skills),
+  const budget=lineBudget();
+  const resume={summary:state.hideSummary?"(hidden)":state.summary,skills:skillGroups(state.skills).map(g=>({category:g.title,items:g.items})),
     experience:state.experience.map(e=>({id:e.id,title:e.title,company:e.company,dates:dateRange(e.start,e.end),bullets:lines(e.bullets)})),
     education:m.education,custom:state.custom.map(s=>({section:s.title,entries:s.entries.map(x=>({id:x.id,name:x.name,meta:x.meta,bullets:lines(x.bullets)}))}))};
   const j=state.job;
@@ -669,7 +787,7 @@ async function imagine(){
 Tailor the candidate's resume to the target job so it ranks highly in ATS keyword matching and persuades a recruiter.
 
 TARGET JOB
-Title: ${j.title||state.headline||"(not given, infer from the resume)"}
+Title: ${j.title||"(not given, infer from the resume)"}
 Company: ${j.company||"(not given)"}
 Priority keywords: ${list(j.keywords).join(", ")||"(none given, infer from the description or title)"}
 Description:
@@ -684,15 +802,20 @@ RULES
 3. Weave the posting's priority keywords and exact phrases naturally into the summary, skills and bullets, matching the posting's spelling (e.g. "Power BI", not "PowerBI"). Prioritize required qualifications. Never stuff keywords or list them unnaturally.
 4. Keep facts consistent: never change job titles, employers, dates, schools or degrees, and never invent certifications or employers. Bullets may describe work plausibly done in that title at that company.
 5. If a role has few or no bullets, write bullets typical of that title, tailored to the target job.
-6. 4-6 bullets for the most recent roles, 2-4 for older ones. Each bullet is one sentence, 90-200 characters.
-7. "headline": a professional title line matching the target job title as closely as the candidate's experience supports.
+6. Bullet counts are flexible to meet the LENGTH budget below: more for recent and relevant roles (typically 3-6), fewer for older ones (2-3). Each bullet is one sentence, 80-200 characters.
+7. Do not add a professional title line under the candidate's name.
 8. "summary": 2-3 sentences, include the target job title, years of experience if inferable, and 3-5 top keywords.
-9. "skills": 12-20 hard skills and tools, most relevant first. Keep the candidate's relevant skills and add posting keywords the candidate's experience supports.
+9. "skills": group into 3-5 clean categories with short names suited to the field (e.g. "Languages", "Tools & Platforms", "Analytics", "Methods", "Certifications & Domains"), 3-8 hard skills each, most relevant category and skill first, 12-24 skills total. Keep the candidate's relevant skills and add posting keywords the candidate's experience supports. No skill appears in two categories.
 10. For custom-section entries (projects etc.) that already have detail bullets, you may improve them; otherwise omit them.
 11. Plain text only: no markdown, no emoji, standard ASCII punctuation, no first-person pronouns.
-
+12. LENGTH: the finished resume must fill exactly one US Letter page with no empty space and no overflow. ${state.hideSummary?"The summary section is hidden, so return an empty summary. ":""}The ${state.hideSummary?"":"summary, "}skill category lines and all bullets (including custom-section details) together should total about ${budget.lines} lines, where a line holds about ${budget.chars} characters: a bullet up to ${budget.chars} characters is 1 line, up to ${budget.chars*2} is 2 lines, each skill category is 1 line, and the summary counts its wrapped lines. Aim for ${budget.lines-2} to ${budget.lines} lines. Never exceed ${budget.lines}. Prefer bullets that end near the end of a line rather than spilling one or two words onto a new line.
+${(state.instructions||"").trim()?`
+CANDIDATE'S EXTRA INSTRUCTIONS
+Follow these closely. They take priority over rules 1-3 and 5-10 when they conflict, but never over rule 4 (no invented employers, titles, dates, degrees or certifications) or rule 11.
+"""${state.instructions.trim().slice(0,3000)}"""
+`:""}
 Reply with only this JSON:
-{"headline":"","summary":"","skills":[""],"experience":[{"id":"<same id>","bullets":[""]}],"custom":[{"id":"<entry id>","bullets":[""]}],"toVerify":["<bullet excerpt> - <figure to confirm>"],"keywordsUsed":[""]}`;
+{"summary":"","skills":[{"category":"","items":[""]}],"experience":[{"id":"<same id>","bullets":[""]}],"custom":[{"id":"<entry id>","bullets":[""]}],"toVerify":["<bullet excerpt> - <figure to confirm>"],"keywordsUsed":[""]}`;
   try{
     const tick=setInterval(()=>status("imagineStatus",`Claude is writing… ${Math.round((Date.now()-t0)/1000)}s`),1000);
     let r;try{r=await claudeJSON(prompt,{maxTokens:12000});}finally{clearInterval(tick);}
@@ -706,9 +829,9 @@ function openModal(r){
   const cmp=(was,now)=>`<div class="cmp"><div class="was"><h4>Current</h4>${was}</div><div><h4>Suggested</h4>${now}</div></div>`;
   const ul=a=>a&&a.length?`<ul>${a.map(b=>`<li>${esc(cleanText(b))}</li>`).join("")}</ul>`:"<em>(empty)</em>";
   const box=(key,label,body)=>blocks.push(`<div class="prop"><label><input type="checkbox" checked data-key="${esc(key)}"> ${esc(label)}</label>${body}</div>`);
-  if(r.headline)box("headline","Professional title",cmp(esc(state.headline)||"<em>(empty)</em>",esc(cleanText(r.headline))));
   if(r.summary)box("summary","Summary",cmp(esc(state.summary)||"<em>(empty)</em>",esc(cleanText(r.summary))));
-  if(Array.isArray(r.skills)&&r.skills.length)box("skills","Skills",cmp(esc(state.skills)||"<em>(empty)</em>",esc(r.skills.map(cleanText).join(", "))));
+  const gl=t=>skillGroups(t).map(g=>`<div>${g.title?`<b>${esc(g.title)}:</b> `:""}${esc(g.items.join(", "))}</div>`).join("")||"<em>(empty)</em>";
+  if(Array.isArray(r.skills)&&r.skills.length)box("skills","Skills",cmp(gl(state.skills),gl(proposedSkills(r.skills))));
   (r.experience||[]).forEach(x=>{const e=state.experience.find(q=>q.id===x.id);if(!e||!Array.isArray(x.bullets))return;
     box("exp:"+e.id,`${e.title||"Position"}${e.company?" · "+e.company:""}`,cmp(ul(lines(e.bullets)),ul(x.bullets)));});
   (r.custom||[]).forEach(x=>{for(const s of state.custom){const en=s.entries.find(q=>q.id===x.id);if(en&&Array.isArray(x.bullets)&&x.bullets.length)box("cus:"+s.id+":"+en.id,`${s.title} · ${en.name}`,cmp(ul(lines(en.bullets)),ul(x.bullets)));}});
@@ -718,34 +841,34 @@ function openModal(r){
   $("#modalBody").innerHTML=head+(blocks.join("")||'<p class="note">Claude returned no changes.</p>');
   $("#modal").hidden=false;document.body.style.overflow="hidden";
 }
+function proposedSkills(sk){if(!Array.isArray(sk))return "";
+  if(sk.every(x=>typeof x==="string"))return sk.map(cleanText).filter(Boolean).join(", ");
+  return sk.filter(g=>g&&Array.isArray(g.items)&&g.items.length).map(g=>(cleanText(g.category||"")?cleanText(g.category)+": ":"")+g.items.map(cleanText).filter(Boolean).join(", ")).join("\n");}
 function closeModal(){$("#modal").hidden=true;document.body.style.overflow="";}
 function applyProposal(){
   const r=proposal;if(!r)return closeModal();
   const on=k=>{const c=document.querySelector(`#modalBody input[data-key="${CSS.escape(k)}"]`);return c&&c.checked;};
-  if(on("headline"))state.headline=cleanText(r.headline);
   if(on("summary"))state.summary=cleanText(r.summary);
-  if(on("skills"))state.skills=r.skills.map(cleanText).filter(Boolean).join(", ");
+  if(on("skills"))state.skills=proposedSkills(r.skills);
   (r.experience||[]).forEach(x=>{const e=state.experience.find(q=>q.id===x.id);if(e&&on("exp:"+e.id))e.bullets=x.bullets.map(cleanText).filter(Boolean).join("\n");});
   (r.custom||[]).forEach(x=>{for(const s of state.custom){const en=s.entries.find(q=>q.id===x.id);if(en&&on("cus:"+s.id+":"+en.id))en.bullets=x.bullets.map(cleanText).filter(Boolean).join("\n");}});
-  state.example=false;fillStatic();renderLists();refresh();closeModal();toast("Applied. Review the numbers in each bullet.");
+  state.example=false;
+  const fit=fitToOnePage();
+  fillStatic();renderLists();renderDesign();refresh();closeModal();
+  toast(!fit.fits?"Applied, but the content is still too long for one page. Shorten Education or custom sections.":
+    fit.removed.length?`Applied and fitted to one page. ${fit.removed.length} lower-priority bullet${fit.removed.length>1?"s were":" was"} removed to fit.`:
+    "Applied and fitted to one page. Review the numbers in each bullet.");
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#modal").hidden)closeModal();});
 
-/* ---------- PDF + copy ---------- */
+/* ---------- PDF ---------- */
 async function generatePdf(){
   const m=model(state);if(!m.name){toast("Add your name before generating the PDF.");$("#f-name").focus();return;}
   let doc;try{doc=buildPDF(m);}catch(e){toast(e.message);return;}
   const fname=(m.name.replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"")||"Resume")+"_Resume.pdf";
   try{doc.save(fname);toast("Downloaded "+fname);}catch(e){toast("Couldn't create the PDF"+(e&&e.message?": "+e.message:"."));}
 }
-async function copyText(){
-  const t=plainText(model(state));
-  try{await navigator.clipboard.writeText(t);toast("Resume copied as plain text");}
-  catch(e){const ta=document.createElement("textarea");ta.value=t;ta.style.cssText="position:fixed;opacity:0";document.body.appendChild(ta);ta.select();
-    let ok=false;try{ok=document.execCommand("copy");}catch(_){}ta.remove();toast(ok?"Resume copied as plain text":"Copy was blocked. Select the preview text instead.");}
-}
 $("#btnPdf").addEventListener("click",generatePdf);
-$("#btnCopy").addEventListener("click",copyText);
 $("#btnImagine").addEventListener("click",imagine);
 $("#btnFetch").addEventListener("click",fetchPosting);
 $("#btnAnalyze").addEventListener("click",()=>analyzePosting(false));
@@ -763,7 +886,7 @@ $("#btnForget").addEventListener("click",()=>{storeKey("",false);renderKeyState(
 renderKeyState();
 
 renderDesign();fillStatic();renderLists();refresh();
-window.__resumeTest={buildPDF,model,plainText,computeScore,get state(){return state;}};
+window.__resumeTest={buildPDF,model,plainText,computeScore,fitToOnePage,fitSizes,lineBudget,measure,get state(){return state;}};
 })();
 </script>
 
