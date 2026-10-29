@@ -77,6 +77,13 @@ button{font:inherit;cursor:pointer}
 .sections.reordering .panel>summary{border-bottom:0}
 .panel.dragging{border-color:var(--strong);box-shadow:0 8px 22px rgba(0,0,0,.2);position:relative;z-index:2}
 .panel.dragging .grip,body.is-dragging{cursor:grabbing}
+.skillchips{display:flex;flex-direction:column;gap:8px}
+.skillchips .grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.skillchips .gt{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-right:2px}
+.skchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:3px 6px 3px 9px;border-radius:2px}
+.skchip:hover{border-color:var(--strong);text-decoration:line-through}
+.skchip svg{width:10px;height:10px;opacity:.6}
+.skchip:hover svg{opacity:1}
 .addsec{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .panel>summary h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin:0}
 .panel>summary .hint{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
@@ -216,12 +223,12 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
           <label class="f"><span>Job posting link</span><input type="url" id="f-job-url" data-path="job/url" placeholder="https://company.com/careers/role-123"></label>
           <button class="btn" type="button" id="btnFetch">Fetch posting</button>
         </div>
-        <p class="note" id="fetchNote">Fetching reads the page through the free Jina Reader service (r.jina.ai). Sites that need a login, like LinkedIn, often block it. If so, paste the description below.</p>
+        <p class="note" id="fetchNote">Reads Greenhouse, Lever, Ashby and SmartRecruiters links directly. For LinkedIn, Workday and other career sites, paste the description below.</p>
         <label class="f"><span>Job description <em>(paste or fetched)</em></span><textarea id="f-job-text" data-path="job/text" rows="5" placeholder="Paste the full job posting here…"></textarea></label>
         <div class="row"><button class="btn small" type="button" id="btnAnalyze">Analyze posting</button><span class="status" id="jobStatus"></span></div>
         <div class="jobcard" id="jobCard" hidden></div>
         <label class="f"><span>Target keywords <em>(comma separated, used for scoring and Imagine)</em></span><textarea id="f-job-keywords" data-path="job/keywords" rows="3" placeholder="SQL, Python, stakeholder management, A/B testing…"></textarea></label>
-        <label class="f"><span>Extra instructions for Claude <em>(optional, used by Imagine)</em></span><textarea id="f-instructions" data-path="instructions" rows="3" placeholder="e.g. Emphasize leadership and people management. I'm moving from retail into data analytics. Don't mention Excel. Keep bullets short."></textarea></label>
+        <label class="f"><span>Extra instructions for Claude <em>(optional, used by Imagine)</em></span><textarea id="f-instructions" data-path="instructions" rows="3" placeholder="e.g. Emphasize leadership. Change my Lakeshore title to Senior Data Analyst. Don't mention Excel. Keep bullets short."></textarea></label>
         <div class="row"><button class="btn primary small" type="button" data-act="imagine">Imagine for this job</button><span class="status" id="imagineStatus"></span></div>
       </div>
     </details>
@@ -268,6 +275,7 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
       <summary><button type="button" class="grip" aria-label="Reorder section. Drag, or use the up and down arrow keys."><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5.5" cy="3.5" r="1.3"/><circle cx="10.5" cy="3.5" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="12.5" r="1.3"/><circle cx="10.5" cy="12.5" r="1.3"/></svg></button><h2>Skills</h2><span class="hint">One category per line</span></summary>
       <div class="pbody">
         <label class="f"><span>Skills <em>(one category per line, e.g. "Languages: SQL, Python". A plain comma list also works.)</em></span><textarea id="f-skills" data-path="skills" rows="4" placeholder="Languages: SQL, Python&#10;Tools: Tableau, Power BI, Excel&#10;Methods: A/B testing, Forecasting"></textarea></label>
+        <div id="skillChips" class="skillchips" aria-live="polite"></div>
       </div>
     </details>
 
@@ -322,6 +330,140 @@ button.chip:hover{background:var(--strong);color:var(--inv-fg)}
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* Job posting parsing shared by the page and the job-fetch worker. No DOM needed. */
+const JobParse = (() => {
+  const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ndash: "-", mdash: "-", rsquo: "'", lsquo: "'", rdquo: '"', ldquo: '"', hellip: "...", bull: "-", middot: "-" };
+  function decode(s) {
+    return String(s || "").replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => {
+      if (e[0] === "#") { const n = e[1].toLowerCase() === "x" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); try { return String.fromCodePoint(n); } catch (_) { return m; } }
+      const k = e.toLowerCase(); return k in ENT ? ENT[k] : m;
+    });
+  }
+  function htmlToText(html) {
+    let s = String(html || "");
+    if (/&lt;\/?[a-z]/i.test(s) && !/<\/?[a-z][^>]*>/i.test(s)) s = decode(s); // entity-escaped HTML (Greenhouse)
+    s = s.replace(/<(script|style|noscript|svg|template|iframe)[\s\S]*?<\/\1>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " ")
+      .replace(/<li[^>]*>/gi, "\n- ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|li|ul|ol|h[1-6]|tr|section|article|header|table)>/gi, "\n")
+      .replace(/<h[1-6][^>]*>/gi, "\n")
+      .replace(/<[^>]+>/g, " ");
+    s = decode(s).replace(/ /g, " ").replace(/[ \t\f\v]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n");
+    return s.trim();
+  }
+  const clean = (s) => htmlToText(s).replace(/\s+/g, " ").trim();
+
+  /* ---------- URL recognition ---------- */
+  function linkedInId(url) {
+    if (!/linkedin\.com/i.test(url)) return null;
+    const m = url.match(/\/jobs\/view\/(?:[^/?#]*?-)?(\d{6,})/i) || url.match(/[?&](?:currentJobId|jobId)=(\d{6,})/i) || url.match(/jobPosting\/(\d{6,})/i);
+    return m ? m[1] : null;
+  }
+  function identify(raw) {
+    let u; try { u = new URL(raw); } catch (_) { return null; }
+    const href = u.href, host = u.hostname.toLowerCase(), q = u.searchParams;
+    const li = linkedInId(href);
+    if (li) return { kind: "linkedin", id: li, view: `https://www.linkedin.com/jobs/view/${li}/`, guest: `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${li}` };
+    let m;
+    if ((m = href.match(/^https?:\/\/(?:job-boards|boards)(\.eu)?\.greenhouse\.io\/(?:embed\/)?([^/?#]+)\/jobs\/(\d+)/i)) && m[2] !== "embed")
+      return { kind: "greenhouse", api: `https://boards-api${m[1] || ""}.greenhouse.io/v1/boards/${m[2]}/jobs/${m[3]}` };
+    if (/greenhouse\.io$/.test(host) && q.get("for") && (q.get("token") || q.get("gh_jid")))
+      return { kind: "greenhouse", api: `https://boards-api.greenhouse.io/v1/boards/${q.get("for")}/jobs/${q.get("token") || q.get("gh_jid")}` };
+    if ((m = href.match(/^https?:\/\/jobs\.(eu\.)?lever\.co\/([^/?#]+)\/([0-9a-f-]{36})/i)))
+      return { kind: "lever", api: `https://api.${m[1] || ""}lever.co/v0/postings/${m[2]}/${m[3]}`, company: m[2] };
+    if ((m = href.match(/^https?:\/\/jobs\.ashbyhq\.com\/([^/?#]+)\/([0-9a-f-]{36})/i)))
+      return { kind: "ashby", api: `https://api.ashbyhq.com/posting-api/job-board/${m[1]}?includeCompensation=true`, id: m[2].toLowerCase(), company: decodeURIComponent(m[1]) };
+    if ((m = href.match(/^https?:\/\/(?:jobs|careers)\.smartrecruiters\.com\/([^/?#]+)\/(\d{6,})/i)))
+      return { kind: "smartrecruiters", api: `https://api.smartrecruiters.com/v1/companies/${m[1]}/postings/${m[2]}` };
+    if ((m = href.match(/^https?:\/\/([a-z0-9-]+)\.(wd\d+)\.myworkdayjobs\.com\/(?:[a-z]{2}-[A-Z]{2}\/)?([^/?#]+)\/job\/(.+?)(?:[?#]|$)/i)))
+      return { kind: "workday", api: `https://${m[1]}.${m[2]}.myworkdayjobs.com/wday/cxs/${m[1]}/${m[3]}/job/${m[4]}`, company: m[1] };
+    if (q.get("gh_jid")) return { kind: "page", ghJid: q.get("gh_jid") };
+    return { kind: "page" };
+  }
+
+  /* ---------- result builders ---------- */
+  const result = (o) => ({ title: clean(o.title || ""), company: clean(o.company || ""), location: clean(o.location || ""), text: String(o.text || "").trim(), source: o.source || "" });
+  function asText(r) { return [r.title && "Job title: " + r.title, r.company && "Company: " + r.company, r.location && "Location: " + r.location, "", r.text].filter((x) => x !== false && x !== undefined).join("\n").trim(); }
+
+  function parseGreenhouse(j) {
+    const loc = j.location && j.location.name; const meta = (j.metadata || []).map((m) => m && m.name && m.value ? `${m.name}: ${Array.isArray(m.value) ? m.value.join(", ") : m.value}` : "").filter(Boolean).join("\n");
+    return result({ title: j.title, company: j.company_name, location: loc, text: htmlToText(j.content) + (meta ? "\n\n" + meta : ""), source: "Greenhouse" });
+  }
+  function parseLever(j, company) {
+    const lists = (j.lists || []).map((l) => `${l.text}\n${htmlToText(l.content)}`).join("\n\n");
+    const c = j.categories || {};
+    return result({ title: j.text, company: company, location: c.location || (c.allLocations || []).join(", "), text: [j.descriptionPlain || htmlToText(j.description), lists, j.additionalPlain || htmlToText(j.additional)].filter(Boolean).join("\n\n"), source: "Lever" });
+  }
+  function parseAshby(board, id, company) {
+    const j = (board.jobs || []).find((x) => String(x.id).toLowerCase() === id);
+    if (!j) return null;
+    const comp = j.compensation && j.compensation.compensationTierSummary;
+    return result({ title: j.title, company: board.title || company, location: [j.location, ...(j.secondaryLocations || []).map((s) => s.location)].filter(Boolean).join("; "), text: (j.descriptionPlain || htmlToText(j.descriptionHtml)) + (comp ? "\n\nCompensation: " + comp : ""), source: "Ashby" });
+  }
+  function parseSmartRecruiters(j) {
+    const s = (j.jobAd && j.jobAd.sections) || {};
+    const parts = ["companyDescription", "jobDescription", "qualifications", "additionalInformation"].map((k) => s[k] && s[k].text ? `${s[k].title || ""}\n${htmlToText(s[k].text)}` : "").filter(Boolean);
+    const l = j.location || {};
+    return result({ title: j.name, company: j.company && j.company.name, location: [l.city, l.region, l.country && l.country.toUpperCase()].filter(Boolean).join(", ") || (l.remote ? "Remote" : ""), text: parts.join("\n\n"), source: "SmartRecruiters" });
+  }
+  function parseWorkday(j, company) {
+    const p = j.jobPostingInfo || {};
+    const org = (j.hiringOrganization && j.hiringOrganization.name) || company;
+    return result({ title: p.title, company: org, location: [p.location, ...(p.additionalLocations || [])].filter(Boolean).join("; "), text: htmlToText(p.jobDescription), source: "Workday" });
+  }
+  function parseLinkedInGuest(html) {
+    const g = (re) => { const m = html.match(re); return m ? m[1] : ""; };
+    const desc = g(/class="[^"]*show-more-less-html__markup[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<button|<\/section|<\/div)/i) || g(/class="[^"]*description__text[^"]*"[^>]*>([\s\S]*?)<\/section>/i);
+    const crit = [...html.matchAll(/description__job-criteria-subheader[^>]*>([\s\S]*?)<\/h3>[\s\S]*?description__job-criteria-text[^>]*>([\s\S]*?)<\/span>/gi)].map((m) => `${clean(m[1])}: ${clean(m[2])}`).join("\n");
+    return result({
+      title: g(/class="[^"]*(?:top-card-layout__title|topcard__title)[^"]*"[^>]*>([\s\S]*?)<\/h[12]>/i),
+      company: g(/class="[^"]*topcard__org-name-link[^"]*"[^>]*>([\s\S]*?)<\/a>/i) || g(/class="[^"]*topcard__flavor[^"]*"[^>]*>([\s\S]*?)<\/span>/i),
+      location: g(/class="[^"]*topcard__flavor topcard__flavor--bullet[^"]*"[^>]*>([\s\S]*?)<\/span>/i),
+      text: htmlToText(desc) + (crit ? "\n\n" + crit : ""), source: "LinkedIn",
+    });
+  }
+  function findJobPosting(node) {
+    if (!node || typeof node !== "object") return null;
+    if (Array.isArray(node)) { for (const n of node) { const r = findJobPosting(n); if (r) return r; } return null; }
+    const t = node["@type"]; if (t === "JobPosting" || (Array.isArray(t) && t.includes("JobPosting"))) return node;
+    for (const k of ["@graph", "mainEntity", "itemListElement"]) if (node[k]) { const r = findJobPosting(node[k]); if (r) return r; }
+    return null;
+  }
+  function parseJsonLd(html) {
+    const blocks = [...String(html).matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+    for (const b of blocks) {
+      let data; try { data = JSON.parse(b[1].trim()); } catch (_) { try { data = JSON.parse(decode(b[1].trim())); } catch (__) { continue; } }
+      const j = findJobPosting(data); if (!j) continue;
+      const org = j.hiringOrganization && (j.hiringOrganization.name || j.hiringOrganization);
+      const locs = [].concat(j.jobLocation || []).map((l) => { const a = (l && l.address) || {}; return typeof a === "string" ? a : [a.addressLocality, a.addressRegion, a.addressCountry && (a.addressCountry.name || a.addressCountry)].filter(Boolean).join(", "); }).filter(Boolean);
+      if (j.jobLocationType === "TELECOMMUTE") locs.push("Remote");
+      const text = htmlToText(decode(j.description || ""));
+      if (text.length < 150) continue;
+      return result({ title: j.title, company: typeof org === "string" ? org : "", location: [...new Set(locs)].join("; "), text, source: "page data" });
+    }
+    return null;
+  }
+  function pageText(html) {
+    const main = html.match(/<main[\s\S]*?<\/main>/i) || html.match(/<article[\s\S]*?<\/article>/i);
+    let body = main ? main[0] : (html.match(/<body[\s\S]*<\/body>/i) || [html])[0];
+    body = body.replace(/<(nav|header|footer|form|aside)[\s\S]*?<\/\1>/gi, " ");
+    const title = (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "";
+    return result({ title: "", text: (title ? "Page title: " + clean(title) + "\n\n" : "") + htmlToText(body), source: "page text" });
+  }
+  /* Signs that what we read is a sign-in wall, error page or blank app shell instead of a posting. */
+  function looksLikePosting(text) {
+    const t = String(text || ""); const low = t.toLowerCase();
+    if (t.length < 400) return false;
+    const signals = ["responsibilit", "qualification", "requirement", "experience", "you will", "you'll", "what you", "about the role", "about you", "skills", "benefits", "job description", "duties"].filter((w) => low.includes(w)).length;
+    if (/^title:[^\n]*(sign in|log in|login|sign up|join now)/im.test(t) && signals < 3) return false;
+    if (/(page not found|job (is )?no longer available|position has been filled|this job has expired|404)/i.test(t.slice(0, 600)) && signals < 3) return false;
+    return signals >= 2;
+  }
+  return { decode, htmlToText, identify, linkedInId, asText, parseGreenhouse, parseLever, parseAshby, parseSmartRecruiters, parseWorkday, parseLinkedInGuest, parseJsonLd, pageText, looksLikePosting };
+})();
+</script>
 <script>
 (function(){
 "use strict";
@@ -609,7 +751,7 @@ function renderScore(pages){
 
 let lastPages=0,pdfT;
 function refresh(){
-  renderSheet();renderScore(lastPages);renderJobCard();
+  renderSkillChips();renderSheet();renderScore(lastPages);renderJobCard();
   $("#exampleBanner").hidden=!state.example;
   clearTimeout(pdfT);pdfT=setTimeout(()=>{try{lastPages=buildPDF(model(state)).getNumberOfPages();const pc=$("#pageCount");if(pc)pc.textContent=lastPages+" page"+(lastPages>1?"s":"")+" in PDF";}catch(e){}},450);
   save();
@@ -672,6 +814,11 @@ document.addEventListener("pointerup",endDrag);document.addEventListener("pointe
 document.addEventListener("keydown",e=>{const g=e.target.closest&&e.target.closest(".grip");if(!g||(e.key!=="ArrowUp"&&e.key!=="ArrowDown"))return;e.preventDefault();
   const p=g.closest(".panel"),box=$("#sections");if(e.key==="ArrowUp"&&p.previousElementSibling)box.insertBefore(p,p.previousElementSibling);
   else if(e.key==="ArrowDown"&&p.nextElementSibling)box.insertBefore(p.nextElementSibling,p);else return;g.focus();commitOrder();toast("Section moved");});
+let skillUndo=[];
+function renderSkillChips(){const el=$("#skillChips");if(!el)return;const g=skillGroups(state.skills);
+  const x='<svg viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.6"><path d="M2 2l6 6M8 2 2 8"/></svg>';
+  el.innerHTML=g.length?`<p class="note">Click a skill to remove it from your resume.${skillUndo.length?' <button type="button" class="link" data-act="undo-skill">Undo</button>':""}</p>`+
+    g.map((grp,gi)=>`<div class="grp">${grp.title?`<span class="gt">${esc(grp.title)}</span>`:""}${grp.items.map((it,ii)=>`<button type="button" class="skchip" data-act="rm-skill" data-g="${gi}" data-i="${ii}" aria-label="Remove ${esc(it)}">${esc(it)}${x}</button>`).join("")}</div>`).join(""):"";}
 function renderDesign(){const d=Object.assign({},DESIGN_DEFAULT,state.design);
   const f=(k,l,step,min,max)=>`<label class="f"><span>${l}</span><input type="number" id="f-design-${k}" data-path="design/${k}" value="${esc(d[k])}" step="${step}" min="${min}" max="${max}" inputmode="decimal"></label>`;
   $("#marginGrid").innerHTML=MARGIN_FIELDS.map(([k,l])=>f(k,l,0.05,0.25,2)).join("");
@@ -690,7 +837,7 @@ function setPath(path,val){
 }
 
 /* ---------- events ---------- */
-document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p)return;setPath(p,e.target.type==="checkbox"?e.target.checked:e.target.value);
+document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p)return;setPath(p,e.target.type==="checkbox"?e.target.checked:e.target.value);if(p==="skills")skillUndo=[];
   if(state.example&&!p.startsWith("job/"))state.example=false;
   if(/^custom\/[^/]+\/title$/.test(p)){const h=e.target.closest(".panel").querySelector(":scope>summary h2");if(h)h.textContent=e.target.value||"Custom section";}
   const it=e.target.closest(".item"),st=it&&it.querySelector(":scope>.item-h strong");
@@ -718,6 +865,11 @@ document.addEventListener("click",e=>{
   else if(a==="load-example"){const keepDesign=state.design;state=example();state.design=keepDesign;fillStatic();renderLists();refresh();}
   else if(a==="fit-page"){const r=fitSizes();if(r.fits){state.design=r.design;renderDesign();refresh();toast("Sized to fill one page");}
     else toast("Too long for one page even at 9 pt with 0.5 in margins. Remove some bullets, or run Imagine to rewrite it to fit.");}
+  else if(a==="rm-skill"){const g=skillGroups(state.skills),gi=+b.dataset.g,ii=+b.dataset.i;if(!g[gi]||!g[gi].items[ii])return;
+    skillUndo.push(state.skills);if(skillUndo.length>30)skillUndo.shift();const gone=g[gi].items.splice(ii,1)[0];state.skills=groupsToText(g.filter(x=>x.items.length));
+    $("#f-skills").value=state.skills;refresh();toast(`Removed "${gone}" from Skills`);
+    const nb=document.querySelector(`#skillChips [data-g="${gi}"][data-i="${ii}"]`)||document.querySelector(`#skillChips [data-g="${gi}"]`)||document.querySelector("#skillChips .skchip");if(nb)nb.focus();}
+  else if(a==="undo-skill"){if(!skillUndo.length)return;state.skills=skillUndo.pop();$("#f-skills").value=state.skills;refresh();toast("Skill restored");}
   else if(a==="design-reset"){state.design=Object.assign({},DESIGN_DEFAULT);renderDesign();refresh();toast("Design reset to defaults");}
   else if(a==="imagine")imagine();
   else if(a==="modal-close")closeModal();
@@ -729,21 +881,43 @@ const status=(id,msg,err)=>{const el=document.getElementById(id);el.textContent=
 function sampleErr(e){return (e&&e.message)||"Claude couldn't finish this request.";}
 
 /* ---------- job posting: fetch + analyze ---------- */
+/* Job reader service (Cloudflare Worker in job-reader/). Paste its URL here after deploying to read LinkedIn, Workday and other career sites. */
+const JOB_READER_URL="";
+async function readDirect(id){
+  const r=await fetch(id.api,{headers:{Accept:"application/json"}});
+  if(r.status===404)throw new Error("That job wasn't found. It may have closed.");
+  if(!r.ok)throw new Error("The job site answered "+r.status+".");
+  const j=await r.json();
+  if(id.kind==="greenhouse")return JobParse.parseGreenhouse(j);
+  if(id.kind==="lever")return JobParse.parseLever(j,id.company);
+  if(id.kind==="smartrecruiters")return JobParse.parseSmartRecruiters(j);
+  if(id.kind==="ashby"){const x=JobParse.parseAshby(j,id.id,id.company);if(!x)throw new Error("That Ashby job is no longer listed.");return x;}
+  return null;
+}
+const DIRECT_KINDS=["greenhouse","lever","ashby","smartrecruiters"];
+if(JOB_READER_URL){const n=document.getElementById("fetchNote");if(n)n.textContent="Reads LinkedIn, Workday, Greenhouse, Lever, Ashby, SmartRecruiters and most company career pages. If a page needs a sign-in, paste the description below.";}
 async function fetchPosting(){
-  const url=(state.job.url||"").trim();
-  if(!/^https?:\/\/\S+\.\S+/.test(url)){status("jobStatus","Enter a full link starting with https://",true);return;}
+  const url=(state.job.url||"").trim();const id=JobParse.identify(url);
+  if(!id||!/^https?:/i.test(url)){status("jobStatus","Enter a full link starting with https://",true);return;}
   const btn=$("#btnFetch");btn.disabled=true;status("jobStatus","Reading the posting…");
+  let res=null,err="";
   try{
-    // Browsers block reading other sites directly, so the page text comes through the public Jina Reader service.
-    const res=await fetch("https://r.jina.ai/"+url,{headers:{"Accept":"text/plain","X-Return-Format":"text"}});
-    if(!res.ok)throw new Error(res.status===429?"the reader service is rate limited, try again in a minute":"the site returned "+res.status);
-    const text=(await res.text()).trim();
-    if(text.length<200){status("jobStatus","The page had almost no text (it may need a login). Paste the description instead.",true);return;}
-    state.job.text=text.slice(0,30000);$("#f-job-text").value=state.job.text;refresh();
+    if(DIRECT_KINDS.includes(id.kind)){try{res=await readDirect(id);}catch(e){err=e.message;}}
+    const good=x=>x&&(x.text||"").length>=150;
+    if(!good(res)&&JOB_READER_URL){
+      try{const r=await fetch(JOB_READER_URL+"?url="+encodeURIComponent(url));const b=await r.json();if(b.ok){res=b;err="";}else err=b.error||"Couldn't read that link.";}
+      catch(e){err="The job reader service didn't respond.";}
+    }
+    if(!good(res)){
+      if(!err)err=id.kind==="linkedin"?"LinkedIn can't be read from this site yet.":id.kind==="workday"?"Workday career sites can't be read from this site yet.":"This career site can't be read from this site yet.";
+      status("jobStatus",/paste/i.test(err)?err:err+" Copy the job description from the posting and paste it below.",true);return;
+    }
+    const text=(res.text&&/^Job title:/.test(res.text))?res.text:JobParse.asText(res);
+    state.job.text=text.slice(0,30000);$("#f-job-text").value=state.job.text;
+    Object.assign(state.job,{title:res.title||"",company:res.company||"",location:res.location||"",summary:"",keywords:""});$("#f-job-keywords").value="";
+    refresh();
     if(getKey())await analyzePosting(true);
-    else status("jobStatus","Posting loaded. Add your API key to pull out keywords, or type them below.");
-  }catch(e){
-    status("jobStatus","Couldn't read that link"+(e&&e.message?" ("+e.message+")":"")+". Paste the description instead.",true);
+    else status("jobStatus","Posting loaded"+(res.source?" from "+res.source:"")+". Add your API key to pull out keywords, or type them below.");
   }finally{btn.disabled=false;}
 }
 
@@ -800,7 +974,7 @@ RULES
 1. Every bullet starts with a strong action verb (Led, Built, Increased, Launched, Reduced, Automated...). Past tense for past roles; present tense is allowed only for a current role ending "Present". Do not repeat the same opening verb within one role.
 2. Every bullet shows a quantified result: %, $, time saved, volume, team size, users, or scale. Keep any numbers the candidate already gave exactly. Where the candidate gave none, propose a realistic, conservative figure that fits the role, and add that bullet's figure to "toVerify" so the candidate can confirm or edit it.
 3. Weave the posting's priority keywords and exact phrases naturally into the summary, skills and bullets, matching the posting's spelling (e.g. "Power BI", not "PowerBI"). Prioritize required qualifications. Never stuff keywords or list them unnaturally.
-4. Keep facts consistent: never change job titles, employers, dates, schools or degrees, and never invent certifications or employers. Bullets may describe work plausibly done in that title at that company.
+4. Keep facts consistent: never change employers, dates, schools or degrees, and never invent certifications or employers. Keep each job title exactly as given UNLESS the candidate's extra instructions ask to change it: then return the new title in that role's "title" field, using the wording they asked for (or, if they ask you to choose, a title that matches the target role and honestly describes the work in that role's bullets). Only change the roles the instructions refer to. Bullets may describe work plausibly done in that role at that company.
 5. If a role has few or no bullets, write bullets typical of that title, tailored to the target job.
 6. Bullet counts are flexible to meet the LENGTH budget below: more for recent and relevant roles (typically 3-6), fewer for older ones (2-3). Each bullet is one sentence, 80-200 characters.
 7. Do not add a professional title line under the candidate's name.
@@ -811,11 +985,11 @@ RULES
 12. LENGTH: the finished resume must fill exactly one US Letter page with no empty space and no overflow. ${state.hideSummary?"The summary section is hidden, so return an empty summary. ":""}The ${state.hideSummary?"":"summary, "}skill category lines and all bullets (including custom-section details) together should total about ${budget.lines} lines, where a line holds about ${budget.chars} characters: a bullet up to ${budget.chars} characters is 1 line, up to ${budget.chars*2} is 2 lines, each skill category is 1 line, and the summary counts its wrapped lines. Aim for ${budget.lines-2} to ${budget.lines} lines. Never exceed ${budget.lines}. Prefer bullets that end near the end of a line rather than spilling one or two words onto a new line.
 ${(state.instructions||"").trim()?`
 CANDIDATE'S EXTRA INSTRUCTIONS
-Follow these closely. They take priority over rules 1-3 and 5-10 when they conflict, but never over rule 4 (no invented employers, titles, dates, degrees or certifications) or rule 11.
+Follow these closely. They take priority over rules 1-3 and 5-10 when they conflict. Job-title changes they ask for are allowed as described in rule 4, but they never override the rest of rule 4 (no invented employers, dates, degrees or certifications) or rule 11.
 """${state.instructions.trim().slice(0,3000)}"""
 `:""}
 Reply with only this JSON:
-{"summary":"","skills":[{"category":"","items":[""]}],"experience":[{"id":"<same id>","bullets":[""]}],"custom":[{"id":"<entry id>","bullets":[""]}],"toVerify":["<bullet excerpt> - <figure to confirm>"],"keywordsUsed":[""]}`;
+{"summary":"","skills":[{"category":"","items":[""]}],"experience":[{"id":"<same id>","title":"<only when the extra instructions ask to change this role's title; otherwise omit this field>","bullets":[""]}],"custom":[{"id":"<entry id>","bullets":[""]}],"toVerify":["<bullet excerpt> - <figure to confirm>"],"keywordsUsed":[""]}`;
   try{
     const tick=setInterval(()=>status("imagineStatus",`Claude is writing… ${Math.round((Date.now()-t0)/1000)}s`),1000);
     let r;try{r=await claudeJSON(prompt,{maxTokens:12000});}finally{clearInterval(tick);}
@@ -832,7 +1006,10 @@ function openModal(r){
   if(r.summary)box("summary","Summary",cmp(esc(state.summary)||"<em>(empty)</em>",esc(cleanText(r.summary))));
   const gl=t=>skillGroups(t).map(g=>`<div>${g.title?`<b>${esc(g.title)}:</b> `:""}${esc(g.items.join(", "))}</div>`).join("")||"<em>(empty)</em>";
   if(Array.isArray(r.skills)&&r.skills.length)box("skills","Skills",cmp(gl(state.skills),gl(proposedSkills(r.skills))));
-  (r.experience||[]).forEach(x=>{const e=state.experience.find(q=>q.id===x.id);if(!e||!Array.isArray(x.bullets))return;
+  (r.experience||[]).forEach(x=>{const e=state.experience.find(q=>q.id===x.id);if(!e)return;
+    const nt=cleanText(x.title||"");
+    if(nt&&nt!==(e.title||"").trim())box("title:"+e.id,`Job title · ${e.company||"Position"}`,cmp(esc(e.title)||"<em>(empty)</em>",esc(nt)+'<div class="note" style="margin-top:6px">Changed because of your extra instructions. Make sure it honestly reflects the role.</div>'));
+    if(!Array.isArray(x.bullets))return;
     box("exp:"+e.id,`${e.title||"Position"}${e.company?" · "+e.company:""}`,cmp(ul(lines(e.bullets)),ul(x.bullets)));});
   (r.custom||[]).forEach(x=>{for(const s of state.custom){const en=s.entries.find(q=>q.id===x.id);if(en&&Array.isArray(x.bullets)&&x.bullets.length)box("cus:"+s.id+":"+en.id,`${s.title} · ${en.name}`,cmp(ul(lines(en.bullets)),ul(x.bullets)));}});
   const ver=(r.toVerify||[]).filter(Boolean);
@@ -850,7 +1027,7 @@ function applyProposal(){
   const on=k=>{const c=document.querySelector(`#modalBody input[data-key="${CSS.escape(k)}"]`);return c&&c.checked;};
   if(on("summary"))state.summary=cleanText(r.summary);
   if(on("skills"))state.skills=proposedSkills(r.skills);
-  (r.experience||[]).forEach(x=>{const e=state.experience.find(q=>q.id===x.id);if(e&&on("exp:"+e.id))e.bullets=x.bullets.map(cleanText).filter(Boolean).join("\n");});
+  (r.experience||[]).forEach(x=>{const e=state.experience.find(q=>q.id===x.id);if(e&&x.title&&on("title:"+e.id))e.title=cleanText(x.title);if(e&&Array.isArray(x.bullets)&&on("exp:"+e.id))e.bullets=x.bullets.map(cleanText).filter(Boolean).join("\n");});
   (r.custom||[]).forEach(x=>{for(const s of state.custom){const en=s.entries.find(q=>q.id===x.id);if(en&&on("cus:"+s.id+":"+en.id))en.bullets=x.bullets.map(cleanText).filter(Boolean).join("\n");}});
   state.example=false;
   const fit=fitToOnePage();
